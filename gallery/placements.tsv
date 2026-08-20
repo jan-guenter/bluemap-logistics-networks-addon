@@ -1,0 +1,16 @@
+cell	kind	topology	label	x	y	z	block_state	entity_tag	attached_pos_long	uuid	valid	render_visible	connections
+A1	stock-computer	control	stock computer north	164	100	164	logisticsnetworks:computer[facing=north]	-	-	-	-	-	-
+A2	stock-computer	control	stock computer east	170	100	164	logisticsnetworks:computer[facing=east]	-	-	-	-	-	-
+A3	stock-computer	control	stock computer south	176	100	164	logisticsnetworks:computer[facing=south]	-	-	-	-	-	-
+A4	stock-computer	control	stock computer west	182	100	164	logisticsnetworks:computer[facing=west]	-	-	-	-	-	-
+B1	synthetic-node	isolated	visible isolated	164	100	171	minecraft:stone	ln_b1	45079977439332	380a27af-3747-5d2d-90c5-6a61efab3e1b	1	1	-
+B2	synthetic-node	hidden-control	hidden zero-geometry control	170	100	171	minecraft:stone	ln_b2	46729244880996	3479a409-811c-54a1-a293-74374ad1c2b7	1	0	-
+C1	synthetic-node	straight	straight west	176	100	171	minecraft:stone	ln_c1	48378512322660	8caa3825-6c7a-556f-8f00-206fa2012b2f	1	1	east
+C2	synthetic-node	straight	straight east	177	100	171	minecraft:stone	ln_c2	48653390229604	68128699-10e7-5c5d-ba94-80e524ba610d	1	1	west
+D1	synthetic-node	l-triad	L corner	164	100	179	minecraft:stone	ln_d1	45079977472100	032b46f8-a356-525f-aa4c-b892344a47c6	1	1	south,east
+D2	synthetic-node	l-triad	L east arm	165	100	179	minecraft:stone	ln_d2	45354855379044	b6cdb2c4-4df1-5427-a4b8-41fd3c4692b1	1	1	west
+D3	synthetic-node	l-triad	L south arm	164	100	180	minecraft:stone	ln_d3	45079977476196	bcc92d70-4723-5c50-9624-53585e42259c	1	1	north
+E1	synthetic-node	square-2x2	square north-west	176	100	179	minecraft:stone	ln_e1	48378512355428	76a6fe00-d48b-59d2-a960-f49380468e9d	1	1	south,east
+E2	synthetic-node	square-2x2	square north-east	177	100	179	minecraft:stone	ln_e2	48653390262372	807d87c7-be30-5407-ba62-2b644ff48eba	1	1	south,west
+E3	synthetic-node	square-2x2	square south-west	176	100	180	minecraft:stone	ln_e3	48378512359524	8f559605-f6c6-560f-be65-a2c398b14d96	1	1	north,east
+E4	synthetic-node	square-2x2	square south-east	177	100	180	minecraft:stone	ln_e4	48653390266468	3621cb48-5cc6-500a-a17d-0a15fb91d232	1	1	north,west
