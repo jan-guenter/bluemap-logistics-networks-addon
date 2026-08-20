@@ -1,0 +1,6 @@
+{
+  "id": "bluemap-logistics-networks",
+  "entrypoint": "io.github.janguenter.bluemap.logisticsnetworks.BlueMapLogisticsNetworksAddon",
+  "dependencies": [],
+  "soft-dependencies": []
+}
