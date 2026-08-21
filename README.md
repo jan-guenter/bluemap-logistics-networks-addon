@@ -18,13 +18,16 @@ node removes the matching coplanar seam faces so
 the frames meet cleanly. A visible invalid node still receives its own frame, but cannot
 be selected as another node's neighbor. Hidden nodes emit no geometry.
 
-This first slice deliberately supports only a deterministic ordinary resource
-model containing one unrotated `[0,0,0]..[16,16,16]` element with all six
-faces and resolvable textures. The blockstate may select that model through a
-single deterministic variant and may rotate the full cube by right angles.
-Multipart, weighted, overlapping, custom-renderer, missing-texture, partial,
-dynamic, or otherwise ambiguous hosts receive no node overlay. The underlying
-host, including `logisticsnetworks:computer`, remains stock BlueMap output.
+This first slice deliberately supports only ordinary resource-model outcomes
+containing one unrotated `[0,0,0]..[16,16,16]` element with all six faces and
+resolvable textures. The blockstate must select one unique, bounded variant
+set; every weighted alternative must independently prove that same occupied
+full-cube geometry and may rotate it only by right angles. Texture and UV
+differences are irrelevant because BlueMap renders the stock host separately.
+Multipart, overlapping, over-capacity, custom-renderer, missing-texture,
+partial, dynamic, or otherwise ambiguous hosts receive no node overlay. The
+underlying host, including `logisticsnetworks:computer`, remains stock BlueMap
+output.
 
 The frame references the operator-installed
 `logisticsnetworks:entity/node` texture. The upstream mod is All Rights

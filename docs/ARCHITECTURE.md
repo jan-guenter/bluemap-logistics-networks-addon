@@ -20,6 +20,16 @@ modulo-indexed neighborhood cache before every sparse host lookup. Only
 neighbors that are both visible and valid are eligible; current-node validity
 is intentionally not part of the lookup rule.
 
+Host preflight requires exactly one matching or default blockstate variant
+set, between one and 64 alternatives, and independently proves every
+alternative to be the same occupied unit-cube shape: default renderer,
+positive finite individual and total weight, right-angle transform, one
+full-cube element, six faces, and resolvable textures. This admits Minecraft
+1.21.1 stone's four
+stock weighted stone/stone-mirrored choices without treating texture or UV
+differences as frame geometry, while any unsupported alternative fails the
+host closed.
+
 The geometry program is project-owned: eight corner joints and twelve thin
 axis-aligned edge bars around a unit cube. Its outer envelope has a fixed
 `1/64`-block outset so stock full-cube faces cannot depth-sort over coplanar

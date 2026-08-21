@@ -19,7 +19,9 @@ not part of the root orchestration repository.
   BlueMap's stock path.
 - Decode only `AttachedPos`, `Valid`, and `RenderVisible` beyond BlueMap's
   ordinary base entity fields.
-- Render only conservatively proven single-model full-cube hosts.
+- Render only conservatively proven full-cube hosts selected by one unique
+  blockstate variant set. A bounded weighted set is admissible only when every
+  alternative independently resolves to the same full-cube occupied geometry.
 - Hidden nodes emit no geometry. Every malformed, duplicate, unsupported,
   ambiguous, capacity-exceeded, missing-resource, or wrong-artifact case is
   fail-closed.

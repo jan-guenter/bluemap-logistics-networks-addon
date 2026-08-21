@@ -77,7 +77,23 @@ class FullCubeHostPreflightTest {
     }
 
     @Test
-    void rejectsOverlappingOrWeightedStateSelection() {
+    void rejectsNonPositiveAndNonFiniteVariantWeights() {
+        assertFalse(FullCubeHostPreflight.supportsVariant(weighted(0D)));
+        assertFalse(FullCubeHostPreflight.supportsVariant(weighted(-1D)));
+        assertFalse(FullCubeHostPreflight.supportsVariant(weighted(Double.NaN)));
+        assertFalse(FullCubeHostPreflight.supportsVariant(
+                weighted(Double.POSITIVE_INFINITY)
+        ));
+
+        ResourcePack pack = packWithTexture();
+        pack.getModels().put(MODEL_KEY, model(fullCubeFaces(), Rotation.ZERO));
+        assertFalse(new FullCubeHostPreflight(pack).supportsVariantSet(
+                new VariantSet(weighted(Double.MAX_VALUE), weighted(Double.MAX_VALUE))
+        ));
+    }
+
+    @Test
+    void rejectsOverlappingStateSelectionButReturnsUniqueWeightedSet() {
         Variant first = new Variant(MODEL_KEY);
         Variant second = new Variant(MODEL_KEY);
         de.bluecolored.bluemap.core.world.BlockState world =
@@ -93,20 +109,59 @@ class FullCubeHostPreflightTest {
                 BlockStateCondition.property("facing", "north"),
                 second
         );
-        assertNull(FullCubeHostPreflight.selectSingleVariant(
+        assertNull(FullCubeHostPreflight.selectUniqueVariantSet(
                 new Variants(new VariantSet[]{matching, overlap}, null),
                 world
         ));
 
         VariantSet weighted = new VariantSet(first, second);
-        assertNull(FullCubeHostPreflight.selectSingleVariant(
+        assertSame(weighted, FullCubeHostPreflight.selectUniqueVariantSet(
                 new Variants(new VariantSet[0], weighted),
                 world
         ));
-        assertSame(first, FullCubeHostPreflight.selectSingleVariant(
+        assertSame(matching, FullCubeHostPreflight.selectUniqueVariantSet(
                 new Variants(new VariantSet[]{matching}, null),
                 world
         ));
+    }
+
+    @Test
+    void acceptsWeightedStoneShapeOnlyWhenEveryAlternativeIsFullCube() {
+        ResourcePack pack = packWithTexture();
+        FullCubeHostPreflight preflight = new FullCubeHostPreflight(pack);
+        ResourcePath<Model> mirroredModelKey = new ResourcePath<>("test:block/host_mirrored");
+        pack.getModels().put(MODEL_KEY, model(fullCubeFaces(), Rotation.ZERO));
+        pack.getModels().put(
+                mirroredModelKey,
+                model(fullCubeFaces(), Rotation.ZERO)
+        );
+
+        VariantSet stonePattern = new VariantSet(
+                new Variant(MODEL_KEY),
+                new Variant(mirroredModelKey),
+                new Variant(MODEL_KEY, 0F, 180F, 0F),
+                new Variant(mirroredModelKey, 0F, 180F, 0F)
+        );
+
+        assertTrue(preflight.supportsVariantSet(stonePattern));
+
+        VariantSet unsupportedOutcome = new VariantSet(
+                new Variant(MODEL_KEY),
+                new Variant(new ResourcePath<>("test:block/missing"))
+        );
+        assertFalse(preflight.supportsVariantSet(unsupportedOutcome));
+    }
+
+    @Test
+    void rejectsEmptyAndOverCapacityVariantSets() {
+        FullCubeHostPreflight preflight = new FullCubeHostPreflight(packWithTexture());
+        assertFalse(preflight.supportsVariantSet(new VariantSet(new Variant[0])));
+
+        Variant[] overCapacity = new Variant[FullCubeHostPreflight.MAX_VARIANTS + 1];
+        for (int index = 0; index < overCapacity.length; index++) {
+            overCapacity[index] = new Variant(MODEL_KEY);
+        }
+        assertFalse(preflight.supportsVariantSet(new VariantSet(overCapacity)));
     }
 
     private static ResourcePack packWithTexture() {
@@ -123,6 +178,10 @@ class FullCubeHostPreflightTest {
                 faces
         );
         return new Model(Map.of(), element);
+    }
+
+    private static Variant weighted(double weight) {
+        return new Variant(MODEL_KEY, 0F, 0F, 0F, false, weight);
     }
 
     private static EnumMap<Direction, Face> fullCubeFaces() {

@@ -9,5 +9,5 @@
   "texture": "logisticsnetworks:entity/node",
   "texture_sha256": "03194c53acc840f953e44838e1086a350f27036a0fcb44165bb5a1786ae7885e",
   "texture_rgba_sha256": "421cb4f00218f915d8d3626997b8aa6e3aa821e20fb6ec50d903eae615187e15",
-  "host_scope": "single deterministic ordinary full-cube resource model"
+  "host_scope": "unique bounded variant set with every outcome ordinary full-cube"
 }
