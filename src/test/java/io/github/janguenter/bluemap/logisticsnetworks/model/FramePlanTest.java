@@ -23,10 +23,10 @@ class FramePlanTest {
             NodeDirection.WEST
     );
     private static final int[] EXPECTED_QUAD_COUNTS = {
-        125, 111, 111, 89,
-        111, 97, 89, 67,
-        111, 89, 97, 67,
-        89, 67, 67, 37
+        125, 101, 101, 79,
+        101, 77, 79, 57,
+        101, 79, 77, 57,
+        79, 57, 57, 37
     };
 
     @Test
@@ -57,16 +57,21 @@ class FramePlanTest {
             ConnectionMask mask = horizontalMask(horizontalBits);
             int connectedSides = Integer.bitCount(horizontalBits);
             int expectedCorners = 0;
+            int expectedPosts = 0;
             for (FramePlan.Part part : FramePlan.parts()) {
                 if (part.role() == FramePlan.Role.UPPER_CORNER
                         && (part.horizontalSides() & mask.bits()) != part.horizontalSides()) {
                     expectedCorners++;
                 }
+                if (part.role() == FramePlan.Role.VERTICAL_EDGE
+                        && (part.horizontalSides() & mask.bits()) == 0) {
+                    expectedPosts++;
+                }
             }
 
             assertEquals(4 - connectedSides, roleCount(mask, FramePlan.Role.UPPER_EDGE));
             assertEquals(expectedCorners, roleCount(mask, FramePlan.Role.UPPER_CORNER));
-            assertEquals(expectedCorners, roleCount(mask, FramePlan.Role.VERTICAL_EDGE));
+            assertEquals(expectedPosts, roleCount(mask, FramePlan.Role.VERTICAL_EDGE));
             assertEquals(8, lowerPartCount(mask));
             assertEquals(EXPECTED_QUAD_COUNTS[horizontalBits], FramePlan.quadCount(mask));
             assertEquals(1 + 4 - connectedSides,
@@ -100,36 +105,42 @@ class FramePlanTest {
     }
 
     @Test
-    void isolatedStraightLAndTwoByTwoHaveExactPerimetersAndCornerPosts() {
+    void isolatedStraightLAndTwoByTwoRetainOnlyTrulyOuterPosts() {
         assertLayout(Set.of(new Cell(0, 0)), 4, 4, 4);
 
         Set<Cell> straight = Set.of(new Cell(0, 0), new Cell(1, 0));
-        assertLayout(straight, 6, 8, 8);
-        assertTrue(hasVerticalCorner(maskFor(new Cell(0, 0), straight),
+        assertLayout(straight, 6, 8, 4);
+        assertFalse(hasVerticalCorner(maskFor(new Cell(0, 0), straight),
                 NodeDirection.EAST, NodeDirection.NORTH));
-        assertTrue(hasVerticalCorner(maskFor(new Cell(0, 0), straight),
+        assertFalse(hasVerticalCorner(maskFor(new Cell(0, 0), straight),
                 NodeDirection.EAST, NodeDirection.SOUTH));
-        assertTrue(hasVerticalCorner(maskFor(new Cell(1, 0), straight),
+        assertFalse(hasVerticalCorner(maskFor(new Cell(1, 0), straight),
+                NodeDirection.WEST, NodeDirection.NORTH));
+        assertFalse(hasVerticalCorner(maskFor(new Cell(1, 0), straight),
+                NodeDirection.WEST, NodeDirection.SOUTH));
+        assertTrue(hasVerticalCorner(maskFor(new Cell(0, 0), straight),
                 NodeDirection.WEST, NodeDirection.NORTH));
         assertTrue(hasVerticalCorner(maskFor(new Cell(1, 0), straight),
-                NodeDirection.WEST, NodeDirection.SOUTH));
+                NodeDirection.EAST, NodeDirection.SOUTH));
 
         Set<Cell> elbow = Set.of(
                 new Cell(0, 0), new Cell(1, 0), new Cell(0, 1)
         );
-        assertLayout(elbow, 8, 11, 11);
+        assertLayout(elbow, 8, 11, 5);
         assertFalse(hasVerticalCorner(maskFor(new Cell(0, 0), elbow),
                 NodeDirection.EAST, NodeDirection.SOUTH));
-        assertTrue(hasVerticalCorner(maskFor(new Cell(1, 0), elbow),
+        assertFalse(hasVerticalCorner(maskFor(new Cell(1, 0), elbow),
                 NodeDirection.WEST, NodeDirection.SOUTH));
-        assertTrue(hasVerticalCorner(maskFor(new Cell(0, 1), elbow),
+        assertFalse(hasVerticalCorner(maskFor(new Cell(0, 1), elbow),
                 NodeDirection.EAST, NodeDirection.NORTH));
+        assertTrue(hasVerticalCorner(maskFor(new Cell(0, 0), elbow),
+                NodeDirection.WEST, NodeDirection.NORTH));
 
         Set<Cell> square = Set.of(
                 new Cell(0, 0), new Cell(1, 0),
                 new Cell(0, 1), new Cell(1, 1)
         );
-        assertLayout(square, 8, 12, 12);
+        assertLayout(square, 8, 12, 4);
         assertFalse(hasUpperCorner(maskFor(new Cell(0, 0), square),
                 NodeDirection.EAST, NodeDirection.SOUTH));
         assertFalse(hasUpperCorner(maskFor(new Cell(1, 0), square),
@@ -146,6 +157,10 @@ class FramePlanTest {
                 NodeDirection.EAST, NodeDirection.NORTH));
         assertFalse(hasVerticalCorner(maskFor(new Cell(1, 1), square),
                 NodeDirection.WEST, NodeDirection.NORTH));
+        assertTrue(hasVerticalCorner(maskFor(new Cell(0, 0), square),
+                NodeDirection.WEST, NodeDirection.NORTH));
+        assertTrue(hasVerticalCorner(maskFor(new Cell(1, 1), square),
+                NodeDirection.EAST, NodeDirection.SOUTH));
     }
 
     @Test

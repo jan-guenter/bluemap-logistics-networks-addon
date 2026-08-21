@@ -31,8 +31,9 @@ outward-facing vertical pane using the same generated material; a connected
 side receives none. Side panes sit `1/256` inside the frame aperture, span from
 `161/256` to `350/256`, and extend to a cell boundary only where a perpendicular
 neighbor lets adjacent exterior panes meet there without area overlap. An upper
-corner joint and its vertical post are each removed only when both incident
-sides connect. This produces project-authored isolated, straight, L-shaped,
+corner joint is removed only when both incident sides connect, while a vertical
+post is removed when either incident side connects. This produces
+project-authored isolated, straight, L-shaped,
 and 2-by-2 surface hypotheses without an internal upper cross or central 2-by-2
 post cluster. All sheets are visual approximations, not a client-renderer
 reproduction.

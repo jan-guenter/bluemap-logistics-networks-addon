@@ -80,3 +80,9 @@ are project-authored visual approximations. Existing frame/post topology is
 unchanged. No upstream LogisticsNetworks source, bytecode, model, texture,
 renderer, or research evidence was inspected for this follow-up; one fresh
 BlueMap visual review remains required.
+
+A subsequent 3,840 by 2,080 owner screenshot (SHA-256
+`910d747c9fe4fd0ad639c9f0fbb6fc89902b4c45682732b1086a7349c3f72f09`) showed
+shared side panes still split by vertical seam posts, so the clean-room
+topology now omits a vertical post when either incident side connects without
+inspecting upstream LogisticsNetworks ARR material.

@@ -45,11 +45,12 @@ The top surface is one upward quad per admitted visible node at local
 project-authored recess prevents a sheet from sharing a plane with any
 horizontal frame face. A cardinal neighbor extends that node's sheet to the
 exact local cell boundary and removes the entire shared upper edge rail. An
-upper corner joint and its vertical corner post are retained when either
-incident side is exposed and omitted only when both incident sides connect.
+upper corner joint is retained when either incident side is exposed and omitted
+only when both incident sides connect; a vertical post is retained only when
+neither incident side connects.
 Sheets therefore meet at boundaries without positive area overlap; 2-by-2
 layouts have neither an internal upper cross nor a raised central post cluster.
-Straight seam endpoints and L perimeters retain their posts. Lower rails and
+Straight seams and connected L sides have no vertical posts. Lower rails and
 corners, plus conservative vertical-cap behavior otherwise, remain unchanged.
 UP/DOWN never omit caps or synthesize bridges.
 

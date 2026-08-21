@@ -251,8 +251,8 @@ public final class FramePlan {
             int connectedIncidentSides = mask.bits() & horizontalSides;
             return switch (role) {
                 case UPPER_EDGE -> connectedIncidentSides != 0;
-                case UPPER_CORNER, VERTICAL_EDGE ->
-                        connectedIncidentSides == horizontalSides;
+                case UPPER_CORNER -> connectedIncidentSides == horizontalSides;
+                case VERTICAL_EDGE -> connectedIncidentSides != 0;
                 case LOWER_CORNER, LOWER_EDGE -> false;
             };
         }
