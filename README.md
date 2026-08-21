@@ -24,13 +24,18 @@ One upward top-sheet quad sits at local `y=351/256`, exactly the provisional
 avoids coplanar sheet/frame faces and their depth-order ambiguity. The sheet's
 uniform pale-neutral RGBA texture is generated in memory under the synthetic
 `bluemap_logistics_networks` namespace; no sheet PNG or upstream glass asset is
-packaged. An isolated sheet fills the inner aperture. Each evidenced cardinal
-neighbor extends it exactly to the shared cell boundary and removes that
-entire upper edge rail. An upper corner joint and its vertical post are each
-removed only when both incident sides connect. This produces project-authored
-isolated, straight, L-shaped, and 2-by-2 surface hypotheses without an internal
-upper cross or central 2-by-2 post cluster. The single upward face is a visual
-approximation for the observed up surface, not a client-renderer reproduction.
+packaged. An isolated top sheet fills the inner aperture. Each evidenced
+cardinal neighbor extends it exactly to the shared cell boundary and removes
+that entire upper edge rail. Each exposed cardinal side also receives one
+outward-facing vertical pane using the same generated material; a connected
+side receives none. Side panes sit `1/256` inside the frame aperture, span from
+`161/256` to `350/256`, and extend to a cell boundary only where a perpendicular
+neighbor lets adjacent exterior panes meet there without area overlap. An upper
+corner joint and its vertical post are each removed only when both incident
+sides connect. This produces project-authored isolated, straight, L-shaped,
+and 2-by-2 surface hypotheses without an internal upper cross or central 2-by-2
+post cluster. All sheets are visual approximations, not a client-renderer
+reproduction.
 
 Because the cage extends into `AttachedPos.UP`, that exact block must be air or
 the node overlay fails closed. Vertical masks retain closed caps and receive no

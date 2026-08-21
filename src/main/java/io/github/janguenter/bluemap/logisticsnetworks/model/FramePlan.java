@@ -5,7 +5,7 @@ package io.github.janguenter.bluemap.logisticsnetworks.model;
 
 import java.util.List;
 
-/** Independently authored one-block-tall cage and connected top-sheet plan. */
+/** Independently authored one-block-tall cage and translucent sheet plan. */
 public final class FramePlan {
 
     public static final float THICKNESS = 1F / 8F;
@@ -14,6 +14,9 @@ public final class FramePlan {
     public static final float HEIGHT = 1F;
     /** Project-authored depth-order gap below the top-rail underside. */
     public static final float SHEET_Y = Y_MIN + HEIGHT - THICKNESS - OUTSET;
+    /** Project-authored vertical-sheet span, inset from its horizontal neighbors. */
+    public static final float SIDE_Y_MIN = Y_MIN + THICKNESS + OUTSET;
+    public static final float SIDE_Y_MAX = SHEET_Y - OUTSET;
 
     private static final float HORIZONTAL_MIN = -OUTSET;
     private static final float HORIZONTAL_MAX = 1F + OUTSET;
@@ -111,6 +114,43 @@ public final class FramePlan {
         );
     }
 
+    /** One outward-facing sheet in each exposed cardinal inner-side aperture. */
+    public static List<SideSheet> sideSheets(ConnectionMask mask) {
+        return java.util.stream.Stream.of(
+                        sideSheet(NodeDirection.NORTH, mask),
+                        sideSheet(NodeDirection.EAST, mask),
+                        sideSheet(NodeDirection.SOUTH, mask),
+                        sideSheet(NodeDirection.WEST, mask)
+                )
+                .filter(java.util.Objects::nonNull)
+                .toList();
+    }
+
+    private static SideSheet sideSheet(NodeDirection direction, ConnectionMask mask) {
+        if (mask.contains(direction)) {
+            return null;
+        }
+        float lowX = mask.contains(NodeDirection.WEST) ? 0F : HORIZONTAL_LOW;
+        float highX = mask.contains(NodeDirection.EAST) ? 1F : HORIZONTAL_HIGH;
+        float lowZ = mask.contains(NodeDirection.NORTH) ? 0F : HORIZONTAL_LOW;
+        float highZ = mask.contains(NodeDirection.SOUTH) ? 1F : HORIZONTAL_HIGH;
+        return switch (direction) {
+            case NORTH -> new SideSheet(direction,
+                    lowX, SIDE_Y_MIN, HORIZONTAL_LOW + OUTSET,
+                    highX, SIDE_Y_MAX, HORIZONTAL_LOW + OUTSET);
+            case EAST -> new SideSheet(direction,
+                    HORIZONTAL_HIGH - OUTSET, SIDE_Y_MIN, lowZ,
+                    HORIZONTAL_HIGH - OUTSET, SIDE_Y_MAX, highZ);
+            case SOUTH -> new SideSheet(direction,
+                    lowX, SIDE_Y_MIN, HORIZONTAL_HIGH - OUTSET,
+                    highX, SIDE_Y_MAX, HORIZONTAL_HIGH - OUTSET);
+            case WEST -> new SideSheet(direction,
+                    HORIZONTAL_LOW + OUTSET, SIDE_Y_MIN, lowZ,
+                    HORIZONTAL_LOW + OUTSET, SIDE_Y_MAX, highZ);
+            case DOWN, UP -> throw new IllegalArgumentException("side sheet must be cardinal");
+        };
+    }
+
     /** Positive when adjacent translated envelopes are separated. */
     public static float neighborEnvelopeGap(NodeDirection direction) {
         return switch (direction) {
@@ -152,9 +192,9 @@ public final class FramePlan {
         return count;
     }
 
-    /** Frame faces plus exactly one upward top-sheet quad. */
+    /** Frame faces plus one top sheet and one side sheet per exposed cardinal side. */
     public static int quadCount(ConnectionMask mask) {
-        return frameQuadCount(mask) + 1;
+        return frameQuadCount(mask) + 1 + sideSheets(mask).size();
     }
 
     private static Part part(
@@ -239,6 +279,31 @@ public final class FramePlan {
 
         public float area() {
             return (x1 - x0) * (z1 - z0);
+        }
+    }
+
+    /** Local vertical sheet rectangle with an outward cardinal normal. */
+    public record SideSheet(
+            NodeDirection direction,
+            float x0,
+            float y0,
+            float z0,
+            float x1,
+            float y1,
+            float z1
+    ) {
+        public SideSheet {
+            if (direction == null || direction == NodeDirection.DOWN
+                    || direction == NodeDirection.UP || !(y0 < y1)
+                    || !Float.isFinite(x0) || !Float.isFinite(z0)
+                    || !Float.isFinite(x1) || !Float.isFinite(z1)
+                    || !((x0 == x1 && z0 < z1) ^ (z0 == z1 && x0 < x1))) {
+                throw new IllegalArgumentException("invalid side sheet");
+            }
+        }
+
+        public float area() {
+            return ((x1 - x0) + (z1 - z0)) * (y1 - y0);
         }
     }
 }

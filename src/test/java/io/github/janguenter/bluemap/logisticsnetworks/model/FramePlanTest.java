@@ -23,19 +23,19 @@ class FramePlanTest {
             NodeDirection.WEST
     );
     private static final int[] EXPECTED_QUAD_COUNTS = {
-        121, 108, 108, 87,
-        108, 95, 87, 66,
-        108, 87, 95, 66,
-        87, 66, 66, 37
+        125, 111, 111, 89,
+        111, 97, 89, 67,
+        111, 89, 97, 67,
+        89, 67, 67, 37
     };
 
     @Test
-    void standaloneCageHasTwentyFramePartsAndOneTopSheet() {
+    void standaloneCageHasTwentyFramePartsAndFiveSheets() {
         ConnectionMask isolated = ConnectionMask.empty();
         assertEquals(20, FramePlan.parts(isolated).size());
         assertEquals(120, FramePlan.frameQuadCount(isolated));
-        assertEquals(121, FramePlan.quadCount(isolated));
-        assertEquals(1, FramePlan.quadCount(isolated) - FramePlan.frameQuadCount(isolated));
+        assertEquals(125, FramePlan.quadCount(isolated));
+        assertEquals(5, FramePlan.quadCount(isolated) - FramePlan.frameQuadCount(isolated));
         assertEquals(4, roleCount(isolated, FramePlan.Role.UPPER_EDGE));
         assertEquals(4, roleCount(isolated, FramePlan.Role.UPPER_CORNER));
         assertEquals(4, roleCount(isolated, FramePlan.Role.VERTICAL_EDGE));
@@ -69,7 +69,8 @@ class FramePlanTest {
             assertEquals(expectedCorners, roleCount(mask, FramePlan.Role.VERTICAL_EDGE));
             assertEquals(8, lowerPartCount(mask));
             assertEquals(EXPECTED_QUAD_COUNTS[horizontalBits], FramePlan.quadCount(mask));
-            assertEquals(1, FramePlan.quadCount(mask) - FramePlan.frameQuadCount(mask));
+            assertEquals(1 + 4 - connectedSides,
+                    FramePlan.quadCount(mask) - FramePlan.frameQuadCount(mask));
             assertSheetBounds(mask);
             assertNoCoplanarFrameSheetArea(mask);
         }

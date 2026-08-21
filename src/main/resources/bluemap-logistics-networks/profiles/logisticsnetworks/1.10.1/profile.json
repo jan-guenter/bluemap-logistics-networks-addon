@@ -13,8 +13,11 @@
     "key": "bluemap_logistics_networks:generated/top_sheet",
     "size": [1, 1],
     "rgba": [232, 236, 236, 48],
+    "usage": ["top_sheet", "exposed_cardinal_side_sheets"],
     "plane_y": "351/256",
     "recess_below_top_rail": "1/256",
+    "side_vertical_span": ["161/256", "350/256"],
+    "side_plane_inset_from_inner_rail": "1/256",
     "generated_in_memory": true
   },
   "host_scope": "unique bounded variant set with every outcome ordinary full-cube and exact air above"

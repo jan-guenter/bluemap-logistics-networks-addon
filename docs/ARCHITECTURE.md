@@ -53,14 +53,24 @@ Straight seam endpoints and L perimeters retain their posts. Lower rails and
 corners, plus conservative vertical-cap behavior otherwise, remain unchanged.
 UP/DOWN never omit caps or synthesize bridges.
 
+Every exposed cardinal side has one outward-wound vertical sheet; a connected
+side has none, so no pane occupies a shared interface. Its project-authored
+plane is `1/256` inward from the inner rail face and its vertical interval is
+`y=161/256..350/256`, leaving the same safety inset at the lower rail and top
+sheet. Along the other horizontal axis it reaches the exact cell boundary when
+a perpendicular neighbor is present and otherwise stops at the `1/8` aperture
+edge. Collinear exterior panes therefore meet at boundary lines without
+positive-area pane/pane or pane/frame coplanarity. Frame/post topology is not
+otherwise changed by this fast visual-approximation pass.
+
 The sheet material is a uniform 1-by-1 RGBA `(232,236,236,48)` image generated
 with BlueMap's MIT `Texture.from` API during resource-extension bake, after
 ordinary texture loading. The synthetic key is reserved during texture
 collection. Any preexisting key, generation error, or post-generation identity
 mismatch leaves the profile inactive. Render-pass construction verifies the
 exact generated image and both texture-gallery material indices again. No PNG
-is bundled. The single upward face and all topology rules are independent
-visual approximations from screenshot evidence, including the `1/256`
+is bundled. The upward and vertical faces and all topology rules are independent
+visual approximations from owner feedback and screenshot evidence, including the `1/256`
 depth-order gap, not client parity.
 
 The emitter retains the texture gallery and the two stable resource keys, not

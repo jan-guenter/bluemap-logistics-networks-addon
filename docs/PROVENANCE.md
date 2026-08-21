@@ -70,3 +70,13 @@ no bridge despite envelope contact. No diagonal topology is inferred. No
 LogisticsNetworks source, bytecode, model, texture, renderer implementation,
 algorithm, or earlier discarded patch/build output was inspected for this
 correction.
+
+The subsequent owner feedback was limited to the visual result: the top faces
+now connect, while the other glass sides do not. The fast follow-up therefore
+adds independently authored outward-facing panes only on exposed cardinal
+sides, reusing the project-generated material. Pane planes, `1/256` safety
+insets, boundary-extension rule, winding, and omission at connected interfaces
+are project-authored visual approximations. Existing frame/post topology is
+unchanged. No upstream LogisticsNetworks source, bytecode, model, texture,
+renderer, or research evidence was inspected for this follow-up; one fresh
+BlueMap visual review remains required.

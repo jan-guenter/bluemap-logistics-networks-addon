@@ -16,7 +16,7 @@ import io.github.janguenter.bluemap.logisticsnetworks.model.NodeDirection;
 
 import java.util.List;
 
-/** Emits the project-owned frame and generated translucent top sheet. */
+/** Emits the project-owned frame and generated translucent sheets. */
 final class FrameEmitter {
 
     private final TextureGallery textures;
@@ -40,6 +40,9 @@ final class FrameEmitter {
             box(block, target, part, connections, materials.frame());
         }
         sheet(block, target, FramePlan.topSheet(connections), materials.sheet());
+        for (FramePlan.SideSheet sideSheet : FramePlan.sideSheets(connections)) {
+            sideSheet(block, target, sideSheet, materials.sheet());
+        }
     }
 
     private void box(
@@ -103,6 +106,28 @@ final class FrameEmitter {
                 material);
     }
 
+    private void sideSheet(
+            BlockNeighborhood block,
+            TileModelView target,
+            FramePlan.SideSheet sheet,
+            int material
+    ) {
+        SheetQuad geometry = sideSheetQuad(sheet);
+        Direction direction = switch (sheet.direction()) {
+            case NORTH -> Direction.NORTH;
+            case EAST -> Direction.EAST;
+            case SOUTH -> Direction.SOUTH;
+            case WEST -> Direction.WEST;
+            case DOWN, UP -> throw new IllegalArgumentException("side sheet must be cardinal");
+        };
+        quad(block, target, direction,
+                geometry.a().x(), geometry.a().y(), geometry.a().z(),
+                geometry.b().x(), geometry.b().y(), geometry.b().z(),
+                geometry.c().x(), geometry.c().y(), geometry.c().z(),
+                geometry.d().x(), geometry.d().y(), geometry.d().z(),
+                material);
+    }
+
     private MaterialIds resolveMaterials() {
         int frame = textures.get(frameTexture);
         int sheet = textures.get(sheetTexture);
@@ -119,6 +144,36 @@ final class FrameEmitter {
                 new Vertex(sheet.x1(), sheet.y(), sheet.z0()),
                 new Vertex(sheet.x0(), sheet.y(), sheet.z0())
         );
+    }
+
+    static SheetQuad sideSheetQuad(FramePlan.SideSheet sheet) {
+        return switch (sheet.direction()) {
+            case NORTH -> new SheetQuad(
+                    new Vertex(sheet.x1(), sheet.y0(), sheet.z0()),
+                    new Vertex(sheet.x0(), sheet.y0(), sheet.z0()),
+                    new Vertex(sheet.x0(), sheet.y1(), sheet.z0()),
+                    new Vertex(sheet.x1(), sheet.y1(), sheet.z0())
+            );
+            case EAST -> new SheetQuad(
+                    new Vertex(sheet.x0(), sheet.y0(), sheet.z1()),
+                    new Vertex(sheet.x0(), sheet.y0(), sheet.z0()),
+                    new Vertex(sheet.x0(), sheet.y1(), sheet.z0()),
+                    new Vertex(sheet.x0(), sheet.y1(), sheet.z1())
+            );
+            case SOUTH -> new SheetQuad(
+                    new Vertex(sheet.x0(), sheet.y0(), sheet.z0()),
+                    new Vertex(sheet.x1(), sheet.y0(), sheet.z0()),
+                    new Vertex(sheet.x1(), sheet.y1(), sheet.z0()),
+                    new Vertex(sheet.x0(), sheet.y1(), sheet.z0())
+            );
+            case WEST -> new SheetQuad(
+                    new Vertex(sheet.x0(), sheet.y0(), sheet.z0()),
+                    new Vertex(sheet.x0(), sheet.y0(), sheet.z1()),
+                    new Vertex(sheet.x0(), sheet.y1(), sheet.z1()),
+                    new Vertex(sheet.x0(), sheet.y1(), sheet.z0())
+            );
+            case DOWN, UP -> throw new IllegalArgumentException("side sheet must be cardinal");
+        };
     }
 
     static boolean omitted(

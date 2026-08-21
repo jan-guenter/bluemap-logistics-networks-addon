@@ -146,6 +146,50 @@ class FrameEmitterTest {
     }
 
     @Test
+    void everySideSheetIsTwoNonDuplicatedOutwardWoundTriangles() {
+        for (int bits = 0; bits < 16; bits++) {
+            ConnectionMask mask = horizontalMask(bits);
+            for (FramePlan.SideSheet sheet : FramePlan.sideSheets(mask)) {
+                FrameEmitter.SheetQuad quad = FrameEmitter.sideSheetQuad(sheet);
+                assertEquals(2, quad.triangles().size());
+                Set<FrameEmitter.Vertex> first = vertices(quad.triangles().get(0));
+                Set<FrameEmitter.Vertex> second = vertices(quad.triangles().get(1));
+                assertNotEquals(first, second);
+                Set<FrameEmitter.Vertex> all = new HashSet<>(first);
+                all.addAll(second);
+                assertEquals(4, all.size());
+                assertEquals(sheet.area() / 2F, area3d(quad.triangles().get(0)));
+                assertEquals(sheet.area() / 2F, area3d(quad.triangles().get(1)));
+                assertTrue(outwardDot(quad.triangles().get(0), sheet.direction()) > 0F);
+                assertTrue(outwardDot(quad.triangles().get(1), sheet.direction()) > 0F);
+            }
+        }
+    }
+
+    @Test
+    void everyMaskUsesTheGeneratedMaterialForTopAndExposedSideSheets() {
+        TextureGallery gallery = new TextureGallery();
+        put(gallery, ResourcePack.MISSING_TEXTURE);
+        put(gallery, FRAME_KEY);
+        put(gallery, SHEET_KEY);
+        int frameMaterial = gallery.get(FRAME_KEY);
+        int sheetMaterial = gallery.get(SHEET_KEY);
+        FrameEmitter emitter = new FrameEmitter(gallery, FRAME_KEY, SHEET_KEY);
+
+        for (int bits = 0; bits < 16; bits++) {
+            ConnectionMask mask = horizontalMask(bits);
+            RecordingTileModel model = emit(emitter, mask);
+            int frameTriangles = FramePlan.frameQuadCount(mask) * 2;
+            int expectedSheetTriangles = (1 + FramePlan.sideSheets(mask).size()) * 2;
+            assertEquals(frameTriangles + expectedSheetTriangles, model.size());
+            assertTrue(model.materials().subList(0, frameTriangles).stream()
+                    .allMatch(material -> material == frameMaterial));
+            assertTrue(model.materials().subList(frameTriangles, model.size()).stream()
+                    .allMatch(material -> material == sheetMaterial));
+        }
+    }
+
+    @Test
     void resolvesCurrentMaterialIdsAfterGalleryResetAndReordering() {
         TextureGallery gallery = new TextureGallery();
         put(gallery, ResourcePack.MISSING_TEXTURE);
@@ -210,12 +254,68 @@ class FrameEmitterTest {
         ) / 2F;
     }
 
+    private static float area3d(FrameEmitter.Triangle triangle) {
+        float[] normal = normal(triangle);
+        return (float) Math.sqrt(normal[0] * normal[0]
+                + normal[1] * normal[1] + normal[2] * normal[2]) / 2F;
+    }
+
+    private static float outwardDot(
+            FrameEmitter.Triangle triangle,
+            NodeDirection direction
+    ) {
+        float[] normal = normal(triangle);
+        return normal[0] * direction.stepX()
+                + normal[1] * direction.stepY()
+                + normal[2] * direction.stepZ();
+    }
+
+    private static float[] normal(FrameEmitter.Triangle triangle) {
+        FrameEmitter.Vertex a = triangle.a();
+        FrameEmitter.Vertex b = triangle.b();
+        FrameEmitter.Vertex c = triangle.c();
+        float abX = b.x() - a.x();
+        float abY = b.y() - a.y();
+        float abZ = b.z() - a.z();
+        float acX = c.x() - a.x();
+        float acY = c.y() - a.y();
+        float acZ = c.z() - a.z();
+        return new float[]{
+            abY * acZ - abZ * acY,
+            abZ * acX - abX * acZ,
+            abX * acY - abY * acX
+        };
+    }
+
+    private static ConnectionMask horizontalMask(int bits) {
+        List<NodeDirection> directions = List.of(
+                NodeDirection.NORTH,
+                NodeDirection.EAST,
+                NodeDirection.SOUTH,
+                NodeDirection.WEST
+        );
+        ConnectionMask result = ConnectionMask.empty();
+        for (int index = 0; index < directions.size(); index++) {
+            if ((bits & 1 << index) != 0) {
+                result = result.with(directions.get(index));
+            }
+        }
+        return result;
+    }
+
     private static RecordingTileModel emit(FrameEmitter emitter) {
+        return emit(emitter, ConnectionMask.empty());
+    }
+
+    private static RecordingTileModel emit(
+            FrameEmitter emitter,
+            ConnectionMask mask
+    ) {
         RecordingTileModel model = new RecordingTileModel(512);
         emitter.emit(
                 neighborhood(),
                 new TileModelView(model),
-                ConnectionMask.empty()
+                mask
         );
         return model;
     }
@@ -231,8 +331,8 @@ class FrameEmitterTest {
         assertEquals(expectedTriangles, model.materials().size());
         assertTrue(model.materials().subList(0, frameTriangles).stream()
                 .allMatch(material -> material == frameMaterial));
-        assertEquals(List.of(sheetMaterial, sheetMaterial),
-                model.materials().subList(frameTriangles, expectedTriangles));
+        assertTrue(model.materials().subList(frameTriangles, expectedTriangles).stream()
+                .allMatch(material -> material == sheetMaterial));
     }
 
     private static void assertAtomicMaterialFailure(FrameEmitter emitter) {
