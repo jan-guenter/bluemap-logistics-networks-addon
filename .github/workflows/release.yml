@@ -1,0 +1,220 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Immutable annotated v* tag to release or safely resume
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  packages: write
+  attestations: write
+  id-token: write
+
+env:
+  PROMOTION_JAVA_VERSION: '21.0.12+8.0.LTS'
+  RELEASE_TAG: ${{ github.event.inputs.release_tag || github.ref_name }}
+
+concurrency:
+  group: release-maven-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify immutable annotated release identity
+        run: |
+          version="$(sed -n 's/^addon_version=//p' gradle.properties)"
+          test -n "${version}"
+          [[ "${version}" != *-SNAPSHOT ]]
+          [[ "${RELEASE_TAG}" =~ ^v[0-9A-Za-z][0-9A-Za-z.+-]*$ ]]
+          test "${RELEASE_TAG}" = "v${version}"
+          git fetch --force --tags origin
+          test "$(git cat-file -t "refs/tags/${RELEASE_TAG}")" = tag
+          test "$(git rev-parse 'HEAD^{commit}')" = \
+            "$(git rev-parse "refs/tags/${RELEASE_TAG}^{commit}")"
+          git fetch --no-tags origin main:refs/remotes/origin/main
+          git merge-base --is-ancestor HEAD refs/remotes/origin/main
+          echo "VERSION=${version}" >> "${GITHUB_ENV}"
+
+      - name: Check out exact BlueMap backport
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: jan-guenter/BlueMap
+          ref: 9be321df995a1103808621d529eb72773e719d4d
+          path: .ci/bluemap
+          submodules: recursive
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify exact detached BlueMap identities
+        run: |
+          test "$(git -C .ci/bluemap rev-parse --abbrev-ref HEAD)" = "HEAD"
+          test "$(git -C .ci/bluemap rev-parse HEAD)" = \
+            "9be321df995a1103808621d529eb72773e719d4d"
+          test "$(git -C .ci/bluemap/api rev-parse HEAD)" = \
+            "285c9a60eff3ac2b0cab308ce1058d1565be0971"
+          git -C .ci/bluemap fetch --force --tags origin
+          test "$(git -C .ci/bluemap describe --exact-match --tags HEAD)" = \
+            "v5.22-agent.backport-5.22-mc1.21.1-2"
+
+      - name: Set up exact promotion Java 21
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: ${{ env.PROMOTION_JAVA_VERSION }}
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.13'
+
+      - name: Set up Gradle 9.6.1
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+        with:
+          gradle-version: '9.6.1'
+          cache-provider: basic
+          cache-read-only: true
+          validate-wrappers: true
+
+      - name: Acquire exact ephemeral LogisticsNetworks input
+        run: |
+          input_dir="${RUNNER_TEMP}/logistics-networks-input"
+          mkdir -p "${input_dir}"
+          curl --fail --location --retry 3 --retry-all-errors \
+            --output "${input_dir}/logisticsnetworks-1.21.1-1.10.1.jar" \
+            "https://www.curseforge.com/api/v1/mods/1448257/files/8381956/download"
+          test "$(stat -c %s \
+            "${input_dir}/logisticsnetworks-1.21.1-1.10.1.jar")" -eq 988995
+          sha256sum --check <<SHA256SUMS
+          d94395da601ce93d8d7c9ffc434a018f6f46488303c654f6d6d5747961f56187  ${input_dir}/logisticsnetworks-1.21.1-1.10.1.jar
+          SHA256SUMS
+          python3 tools/verify_pinned_artifact.py \
+            --jar "${input_dir}/logisticsnetworks-1.21.1-1.10.1.jar"
+
+      - name: Verify gallery and provenance inputs
+        run: |
+          python3 -m json.tool provenance/upstreams.json >/dev/null
+          python3 -m json.tool provenance/release.json >/dev/null
+          python3 gallery/generate.py --check
+          python3 gallery/lint.py
+          (cd gallery && sha256sum --check SHA256SUMS)
+          bash gallery/package.sh "${RUNNER_TEMP}/gallery-first.zip"
+          bash gallery/package.sh "${RUNNER_TEMP}/gallery-second.zip"
+          cmp "${RUNNER_TEMP}/gallery-first.zip" \
+            "${RUNNER_TEMP}/gallery-second.zip"
+          test "$(stat -c %s "${RUNNER_TEMP}/gallery-first.zip")" -eq 9179
+          sha256sum --check <<SHA256SUMS
+          38960663ba58bfdba3ca40d9b6f834177870395a1e305c9f10710b488e11e4da  ${RUNNER_TEMP}/gallery-first.zip
+          SHA256SUMS
+
+      - name: Build and verify accepted bytes
+        run: |
+          input_dir="${RUNNER_TEMP}/logistics-networks-input"
+          gradle --no-daemon \
+            -PbluemapSourcePath=.ci/bluemap \
+            -PlogisticsNetworksJar="${input_dir}/logisticsnetworks-1.21.1-1.10.1.jar" \
+            "-PreleaseTag=${RELEASE_TAG}" \
+            clean check build generatePomFileForAddonPublication \
+            generateMetadataFileForAddonPublication \
+            verifyPublicationArtifacts verifyReleaseCandidate
+          test "$(stat -c %s \
+            "build/libs/bluemap-logistics-networks-addon-${VERSION}.jar")" \
+            -eq 67367
+          test "$(stat -c %s \
+            "build/libs/bluemap-logistics-networks-addon-${VERSION}-sources.jar")" \
+            -eq 31656
+          test "$(stat -c %s build/publications/addon/pom-default.xml)" -eq 1408
+          test "$(stat -c %s build/publications/addon/module.json)" -eq 2894
+          sha256sum --check <<SHA256SUMS
+          5f813504e2dccd63ad0a2cc1bd33a129da2e2934e5576d149b6b215c12ba8f18  build/libs/bluemap-logistics-networks-addon-${VERSION}.jar
+          df0b53155df3c1add4fbea839fbc125a212ed2c6a4d25ebe812c4801a85bfa98  build/libs/bluemap-logistics-networks-addon-${VERSION}-sources.jar
+          d2d0f5443803bd3e6be9fb874a3a4e7997f14c6b88dd82fb24359f4b9e15730b  build/publications/addon/pom-default.xml
+          941a1cef0811d1f88d974f7c401141aa5d73ce8e56a04a13b7a35a5c4a341936  build/publications/addon/module.json
+          SHA256SUMS
+          python3 tools/verify_staged_equivalence.py \
+            --jar "build/libs/bluemap-logistics-networks-addon-${VERSION}.jar" \
+            --entries provenance/accepted-staging-entries.sha256
+
+      - name: Prepare deterministic release bundle
+        run: |
+          mkdir release
+          cp "build/libs/bluemap-logistics-networks-addon-${VERSION}.jar" release/
+          cp "build/libs/bluemap-logistics-networks-addon-${VERSION}-sources.jar" \
+            release/
+          cp build/publications/addon/pom-default.xml \
+            "release/bluemap-logistics-networks-addon-${VERSION}.pom"
+          cp build/publications/addon/module.json \
+            "release/bluemap-logistics-networks-addon-${VERSION}.module.json"
+          (
+            cd release
+            sha256sum -- \
+              "./bluemap-logistics-networks-addon-${VERSION}-sources.jar" \
+              "./bluemap-logistics-networks-addon-${VERSION}.jar" \
+              "./bluemap-logistics-networks-addon-${VERSION}.module.json" \
+              "./bluemap-logistics-networks-addon-${VERSION}.pom" \
+              > SHA256SUMS
+          )
+          (cd release && sha256sum --check SHA256SUMS)
+          test "$(stat -c %s release/SHA256SUMS)" -eq 492
+          test "$(sha256sum release/SHA256SUMS | cut -d ' ' -f 1)" = \
+            063be9315f03b049d6db36175042195abbe42ddac18a826d4559830714840b5b
+
+      - name: Create or refresh draft prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
+            test "$(gh release view "${RELEASE_TAG}" \
+              --json isDraft --jq '.isDraft')" = true
+            gh release upload "${RELEASE_TAG}" release/* --clobber
+          else
+            gh release create "${RELEASE_TAG}" release/* \
+              --draft \
+              --prerelease \
+              --generate-notes \
+              --title "BlueMap Logistics Networks Add-on ${VERSION}" \
+              --verify-tag
+          fi
+
+      - name: Attest release assets with Sigstore
+        uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
+        with:
+          subject-path: release/*
+
+      - name: Publish Maven package
+        env:
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          gradle --no-daemon \
+            -PbluemapSourcePath=.ci/bluemap \
+            -PlogisticsNetworksJar="${RUNNER_TEMP}/logistics-networks-input/logisticsnetworks-1.21.1-1.10.1.jar" \
+            publishAddonPublicationToGitHubPackagesRepository
+
+      - name: Verify draft assets and publish public prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          downloaded="${RUNNER_TEMP}/release-assets"
+          mkdir -p "${downloaded}"
+          gh release download "${RELEASE_TAG}" --dir "${downloaded}"
+          for asset in release/*; do
+            cmp "${asset}" "${downloaded}/$(basename "${asset}")"
+          done
+          gh release edit "${RELEASE_TAG}" --draft=false --prerelease

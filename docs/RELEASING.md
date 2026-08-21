@@ -1,20 +1,42 @@
-# Release gate
+# Release procedure
 
-This repository is currently a local prototype. Release is blocked on a
-natural exact-version entity fixture, matching modded-client comparison,
-disposable BlueMap staging, owner visual acceptance, and the ordinary
-independent release audit.
+Releases are promoted only from an owner-accepted, independently audited
+commit on `main`. The accepted candidate identity is recorded in
+`provenance/release.json`.
 
-The minimum local candidate gate is:
+## Clean gate
+
+Use Java 21, Gradle 9.6.1, the exact sibling BlueMap checkout, and the exact
+local LogisticsNetworks artifact:
 
 ```bash
 gradle --no-daemon \
   -PlogisticsNetworksJar=/absolute/path/logisticsnetworks-1.21.1-1.10.1.jar \
+  -PreleaseTag=v0.1.0-alpha.1 \
   clean check build generatePomFileForAddonPublication \
-  generateMetadataFileForAddonPublication
+  generateMetadataFileForAddonPublication verifyPublicationArtifacts \
+  verifyReleaseCandidate
 ```
 
-Before any later release, inspect the production/sources JARs, POM and Gradle
-module; confirm exact artifact detection in hosted CI; prove that no upstream
-asset or class is packaged; and compare the exact candidate in the disposable
-Minecraft/BlueMap lab. Publication never authorizes production deployment.
+Inspect the production and sources JARs. Reject NeoForge metadata, nested
+JARs, upstream classes/assets, gallery output, tests, research data, or
+unexpanded metadata.
+
+## Runtime and publication
+
+Run the deterministic [gallery](../gallery/README.md) against that exact JAR,
+open the intended BlueMap link for the required lightweight sanity check, and
+obtain explicit owner acceptance. The accepted synthetic fixture does not
+prove a natural saved fixture or exact-client renderer parity. Do not
+substitute a functional rebuild afterward; only the recorded final-version
+manifest transition is permitted.
+
+Before tagging, merge the independently audited release pull request. Create
+and push an annotated `v<addon_version>` tag at that reviewed `main` commit.
+The release workflow reproduces every accepted byte, creates a draft
+prerelease, uploads and attests the assets, publishes the Maven package,
+verifies the draft assets, and only then makes the prerelease public.
+
+Never reuse or move a release tag. A failed prepublication run may be resumed
+with the workflow's exact immutable tag input while its GitHub release remains
+a draft. Publication deploys nothing to the Minecraft server.

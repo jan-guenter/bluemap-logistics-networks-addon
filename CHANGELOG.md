@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.0-SNAPSHOT
+## 0.1.0-alpha.1 - 2026-08-21
 
 - Add the bounded exact-profile LogisticsNetworks node-rendering prototype.
 - Admit bounded weighted blockstate choices only when every outcome proves the
@@ -30,3 +30,5 @@
 - Resolve frame and sheet material IDs from their stable keys at every emit so
   BlueMap texture-gallery purge/repopulation cannot leave cached stale IDs;
   missing or aliased post-reset mappings fail before model mutation.
+- Freeze the owner-accepted functional bytes; the final release differs from
+  the staging JAR only in the manifest's final `Implementation-Version`.

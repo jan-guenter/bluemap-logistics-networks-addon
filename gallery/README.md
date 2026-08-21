@@ -11,10 +11,11 @@ or invoke this datapack in production or in a shared dimension.
 
 This is deliberately **synthetic prototype evidence, not a natural
 saved-fixture release proof**. The node entities are created with bounded
-`summon` commands using the exact narrow persisted-data contract. A fixture
-placed through the real LogisticsNetworks item flow, its sanitized saved
-entity-region NBT, an exact-client comparison, and owner acceptance remain
-release blockers.
+`summon` commands using the exact narrow persisted-data contract. The owner
+accepted the resulting disposable BlueMap staging render for the bounded
+`0.1.0-alpha.1` release. A fixture placed through the real LogisticsNetworks
+item flow, its sanitized saved entity-region NBT, and an exact-client
+comparison remain unclaimed follow-up evidence.
 
 ## Cells
 
