@@ -47,9 +47,18 @@ internal upper crosses visible in the BlueMap comparison. Rasters do not prove
 exact geometry, material, alpha, winding, or hidden faces.
 
 The new implementation therefore uses the independently authored full-height
-cage, one upward sheet at `y=11/8`, and cardinal-only topology. The uniform
-1-by-1 RGBA `(232,236,236,48)` material, exact sheet plane, one-sided face,
-upper-edge removal, and upper-corner rule are project-authored visual
+cage, one upward sheet, and cardinal-only topology. A subsequent project-owned
+staging render exposed a stable raised square at the center of a 2-by-2 group,
+formed by the four independently authored internal vertical corner posts. It
+does not establish client behavior. The correction applies the same
+both-incident connection predicate to upper corner joints and vertical corner
+posts, removing that internal cluster while retaining posts at straight seam
+endpoints and around L perimeters.
+
+The sheet sits at `y=351/256`, an independently chosen `1/256` recess below the
+top-rail underside that prevents positive-area coplanar sheet/frame faces. The
+uniform 1-by-1 RGBA `(232,236,236,48)` material, exact sheet plane, one-sided
+face, upper-edge removal, and corner/post rules are project-authored visual
 approximations. The earlier screenshot reading still weakly supports, but does
 not measure, the retained provisional `1/8` rail and `1/256` outset choices.
 Planar frame UVs remain a project-owned hypothesis. None of these choices is a

@@ -22,6 +22,12 @@ class FramePlanTest {
             NodeDirection.SOUTH,
             NodeDirection.WEST
     );
+    private static final int[] EXPECTED_QUAD_COUNTS = {
+        121, 108, 108, 87,
+        108, 95, 87, 66,
+        108, 87, 95, 66,
+        87, 66, 66, 37
+    };
 
     @Test
     void standaloneCageHasTwentyFramePartsAndOneTopSheet() {
@@ -32,6 +38,7 @@ class FramePlanTest {
         assertEquals(1, FramePlan.quadCount(isolated) - FramePlan.frameQuadCount(isolated));
         assertEquals(4, roleCount(isolated, FramePlan.Role.UPPER_EDGE));
         assertEquals(4, roleCount(isolated, FramePlan.Role.UPPER_CORNER));
+        assertEquals(4, roleCount(isolated, FramePlan.Role.VERTICAL_EDGE));
         assertEquals(
                 new FramePlan.TopSheet(
                         FramePlan.THICKNESS,
@@ -45,7 +52,7 @@ class FramePlanTest {
     }
 
     @Test
-    void allSixteenHorizontalMasksHaveExactRailsCornersAndCoverage() {
+    void allSixteenHorizontalMasksHaveExactRailsCornersPostsAndCoverage() {
         for (int horizontalBits = 0; horizontalBits < 16; horizontalBits++) {
             ConnectionMask mask = horizontalMask(horizontalBits);
             int connectedSides = Integer.bitCount(horizontalBits);
@@ -59,10 +66,12 @@ class FramePlanTest {
 
             assertEquals(4 - connectedSides, roleCount(mask, FramePlan.Role.UPPER_EDGE));
             assertEquals(expectedCorners, roleCount(mask, FramePlan.Role.UPPER_CORNER));
-            assertEquals(12, nonUpperPartCount(mask));
+            assertEquals(expectedCorners, roleCount(mask, FramePlan.Role.VERTICAL_EDGE));
+            assertEquals(8, lowerPartCount(mask));
+            assertEquals(EXPECTED_QUAD_COUNTS[horizontalBits], FramePlan.quadCount(mask));
             assertEquals(1, FramePlan.quadCount(mask) - FramePlan.frameQuadCount(mask));
             assertSheetBounds(mask);
-            assertNoTopFootprintOverlap(mask);
+            assertNoCoplanarFrameSheetArea(mask);
         }
     }
 
@@ -90,16 +99,36 @@ class FramePlanTest {
     }
 
     @Test
-    void isolatedStraightLAndTwoByTwoHaveOnlyTheirOuterTopPerimeters() {
-        assertLayout(Set.of(new Cell(0, 0)), 4, 4);
-        assertLayout(Set.of(new Cell(0, 0), new Cell(1, 0)), 6, 8);
-        assertLayout(Set.of(new Cell(0, 0), new Cell(1, 0), new Cell(0, 1)), 8, 11);
+    void isolatedStraightLAndTwoByTwoHaveExactPerimetersAndCornerPosts() {
+        assertLayout(Set.of(new Cell(0, 0)), 4, 4, 4);
+
+        Set<Cell> straight = Set.of(new Cell(0, 0), new Cell(1, 0));
+        assertLayout(straight, 6, 8, 8);
+        assertTrue(hasVerticalCorner(maskFor(new Cell(0, 0), straight),
+                NodeDirection.EAST, NodeDirection.NORTH));
+        assertTrue(hasVerticalCorner(maskFor(new Cell(0, 0), straight),
+                NodeDirection.EAST, NodeDirection.SOUTH));
+        assertTrue(hasVerticalCorner(maskFor(new Cell(1, 0), straight),
+                NodeDirection.WEST, NodeDirection.NORTH));
+        assertTrue(hasVerticalCorner(maskFor(new Cell(1, 0), straight),
+                NodeDirection.WEST, NodeDirection.SOUTH));
+
+        Set<Cell> elbow = Set.of(
+                new Cell(0, 0), new Cell(1, 0), new Cell(0, 1)
+        );
+        assertLayout(elbow, 8, 11, 11);
+        assertFalse(hasVerticalCorner(maskFor(new Cell(0, 0), elbow),
+                NodeDirection.EAST, NodeDirection.SOUTH));
+        assertTrue(hasVerticalCorner(maskFor(new Cell(1, 0), elbow),
+                NodeDirection.WEST, NodeDirection.SOUTH));
+        assertTrue(hasVerticalCorner(maskFor(new Cell(0, 1), elbow),
+                NodeDirection.EAST, NodeDirection.NORTH));
 
         Set<Cell> square = Set.of(
                 new Cell(0, 0), new Cell(1, 0),
                 new Cell(0, 1), new Cell(1, 1)
         );
-        assertLayout(square, 8, 12);
+        assertLayout(square, 8, 12, 12);
         assertFalse(hasUpperCorner(maskFor(new Cell(0, 0), square),
                 NodeDirection.EAST, NodeDirection.SOUTH));
         assertFalse(hasUpperCorner(maskFor(new Cell(1, 0), square),
@@ -108,6 +137,67 @@ class FramePlanTest {
                 NodeDirection.EAST, NodeDirection.NORTH));
         assertFalse(hasUpperCorner(maskFor(new Cell(1, 1), square),
                 NodeDirection.WEST, NodeDirection.NORTH));
+        assertFalse(hasVerticalCorner(maskFor(new Cell(0, 0), square),
+                NodeDirection.EAST, NodeDirection.SOUTH));
+        assertFalse(hasVerticalCorner(maskFor(new Cell(1, 0), square),
+                NodeDirection.WEST, NodeDirection.SOUTH));
+        assertFalse(hasVerticalCorner(maskFor(new Cell(0, 1), square),
+                NodeDirection.EAST, NodeDirection.NORTH));
+        assertFalse(hasVerticalCorner(maskFor(new Cell(1, 1), square),
+                NodeDirection.WEST, NodeDirection.NORTH));
+    }
+
+    @Test
+    void twoByTwoCenterHasNoRaisedFrameVolumeOrCapTriangles() {
+        Set<Cell> square = Set.of(
+                new Cell(0, 0), new Cell(1, 0),
+                new Cell(0, 1), new Cell(1, 1)
+        );
+        Rectangle center = new Rectangle(
+                1F - FramePlan.THICKNESS,
+                1F - FramePlan.THICKNESS,
+                1F + FramePlan.THICKNESS,
+                1F + FramePlan.THICKNESS
+        );
+        int raisedVolumes = 0;
+        int raisedFrameTriangles = 0;
+        int raisedCapTriangles = 0;
+        int verticalPosts = 0;
+        for (Cell cell : square) {
+            ConnectionMask mask = maskFor(cell, square);
+            for (FramePlan.Part part : FramePlan.parts(mask)) {
+                Rectangle footprint = translatedFootprint(cell, part);
+                if (part.y1() > FramePlan.Y_MIN + FramePlan.THICKNESS
+                        && footprint.overlapsInArea(center)) {
+                    raisedVolumes++;
+                    raisedFrameTriangles += frameTriangleCount(part, mask);
+                    raisedCapTriangles += 2;
+                    if (part.role() == FramePlan.Role.VERTICAL_EDGE) {
+                        verticalPosts++;
+                    }
+                }
+            }
+        }
+
+        assertEquals(0, raisedVolumes);
+        assertEquals(0, raisedFrameTriangles);
+        assertEquals(0, raisedCapTriangles);
+        assertEquals(0, verticalPosts);
+    }
+
+    @Test
+    void composedLayoutsHaveNoCoplanarFrameSheetArea() {
+        assertNoComposedCoplanarFrameSheetArea(Set.of(new Cell(0, 0)));
+        assertNoComposedCoplanarFrameSheetArea(
+                Set.of(new Cell(0, 0), new Cell(1, 0))
+        );
+        assertNoComposedCoplanarFrameSheetArea(
+                Set.of(new Cell(0, 0), new Cell(1, 0), new Cell(0, 1))
+        );
+        assertNoComposedCoplanarFrameSheetArea(Set.of(
+                new Cell(0, 0), new Cell(1, 0),
+                new Cell(0, 1), new Cell(1, 1)
+        ));
     }
 
     @Test
@@ -151,8 +241,13 @@ class FramePlanTest {
         assertEquals(1F / 256F, FramePlan.OUTSET);
         assertEquals(1F / 2F, FramePlan.Y_MIN);
         assertEquals(1F, FramePlan.HEIGHT);
-        assertEquals(FramePlan.Y_MIN + FramePlan.HEIGHT - FramePlan.THICKNESS,
+        assertEquals(351F / 256F, FramePlan.SHEET_Y);
+        assertEquals(FramePlan.Y_MIN + FramePlan.HEIGHT
+                        - FramePlan.THICKNESS - FramePlan.OUTSET,
                 FramePlan.SHEET_Y);
+        assertEquals(FramePlan.OUTSET,
+                FramePlan.Y_MIN + FramePlan.HEIGHT
+                        - FramePlan.THICKNESS - FramePlan.SHEET_Y);
         assertEquals(-FramePlan.OUTSET, minimum(FramePlan.Part::x0));
         assertEquals(1F + FramePlan.OUTSET, maximum(FramePlan.Part::x1));
         assertEquals(FramePlan.Y_MIN - FramePlan.OUTSET, minimum(FramePlan.Part::y0));
@@ -172,35 +267,35 @@ class FramePlanTest {
         assertTrue(sheet.area() > 0F);
     }
 
-    private static void assertNoTopFootprintOverlap(ConnectionMask mask) {
-        List<Rectangle> rectangles = new ArrayList<>();
+    private static void assertNoCoplanarFrameSheetArea(ConnectionMask mask) {
         FramePlan.TopSheet sheet = FramePlan.topSheet(mask);
-        rectangles.add(new Rectangle(sheet.x0(), sheet.z0(), sheet.x1(), sheet.z1()));
+        Rectangle sheetRectangle = new Rectangle(
+                sheet.x0(), sheet.z0(), sheet.x1(), sheet.z1()
+        );
         for (FramePlan.Part part : FramePlan.parts(mask)) {
-            if (part.role() == FramePlan.Role.UPPER_EDGE
-                    || part.role() == FramePlan.Role.UPPER_CORNER) {
-                rectangles.add(new Rectangle(part.x0(), part.z0(), part.x1(), part.z1()));
-            }
-        }
-        for (int left = 0; left < rectangles.size(); left++) {
-            for (int right = left + 1; right < rectangles.size(); right++) {
-                assertFalse(rectangles.get(left).overlapsInArea(rectangles.get(right)));
-            }
+            Rectangle partRectangle = new Rectangle(
+                    part.x0(), part.z0(), part.x1(), part.z1()
+            );
+            assertFalse(partRectangle.overlapsInArea(sheetRectangle)
+                    && (part.y0() == sheet.y() || part.y1() == sheet.y()));
         }
     }
 
     private static void assertLayout(
             Set<Cell> cells,
             int expectedUpperEdges,
-            int expectedUpperCorners
+            int expectedUpperCorners,
+            int expectedVerticalEdges
     ) {
         int upperEdges = 0;
         int upperCorners = 0;
+        int verticalEdges = 0;
         List<Rectangle> sheets = new ArrayList<>();
         for (Cell cell : cells) {
             ConnectionMask mask = maskFor(cell, cells);
             upperEdges += roleCount(mask, FramePlan.Role.UPPER_EDGE);
             upperCorners += roleCount(mask, FramePlan.Role.UPPER_CORNER);
+            verticalEdges += roleCount(mask, FramePlan.Role.VERTICAL_EDGE);
             for (NodeDirection direction : HORIZONTAL) {
                 long rails = FramePlan.parts(mask).stream()
                         .filter(part -> part.role() == FramePlan.Role.UPPER_EDGE)
@@ -218,11 +313,62 @@ class FramePlanTest {
         }
         assertEquals(expectedUpperEdges, upperEdges);
         assertEquals(expectedUpperCorners, upperCorners);
+        assertEquals(expectedVerticalEdges, verticalEdges);
         for (int left = 0; left < sheets.size(); left++) {
             for (int right = left + 1; right < sheets.size(); right++) {
                 assertFalse(sheets.get(left).overlapsInArea(sheets.get(right)));
             }
         }
+    }
+
+    private static void assertNoComposedCoplanarFrameSheetArea(Set<Cell> cells) {
+        List<HorizontalFace> frameFaces = new ArrayList<>();
+        List<HorizontalFace> sheetFaces = new ArrayList<>();
+        for (Cell cell : cells) {
+            ConnectionMask mask = maskFor(cell, cells);
+            for (FramePlan.Part part : FramePlan.parts(mask)) {
+                Rectangle footprint = translatedFootprint(cell, part);
+                frameFaces.add(new HorizontalFace(part.y0(), footprint));
+                frameFaces.add(new HorizontalFace(part.y1(), footprint));
+            }
+            FramePlan.TopSheet sheet = FramePlan.topSheet(mask);
+            sheetFaces.add(new HorizontalFace(
+                    sheet.y(),
+                    new Rectangle(
+                            cell.x() + sheet.x0(),
+                            cell.z() + sheet.z0(),
+                            cell.x() + sheet.x1(),
+                            cell.z() + sheet.z1()
+                    )
+            ));
+        }
+        for (HorizontalFace sheet : sheetFaces) {
+            for (HorizontalFace frame : frameFaces) {
+                assertFalse(sheet.y() == frame.y()
+                        && sheet.footprint().overlapsInArea(frame.footprint()));
+            }
+        }
+    }
+
+    private static Rectangle translatedFootprint(Cell cell, FramePlan.Part part) {
+        return new Rectangle(
+                cell.x() + part.x0(),
+                cell.z() + part.z0(),
+                cell.x() + part.x1(),
+                cell.z() + part.z1()
+        );
+    }
+
+    private static int frameTriangleCount(FramePlan.Part part, ConnectionMask mask) {
+        int quads = 6;
+        for (NodeDirection direction : NodeDirection.values()) {
+            if (mask.contains(direction)
+                    && FramePlan.seamFacesMayBeOmitted(direction)
+                    && part.touches(direction)) {
+                quads--;
+            }
+        }
+        return quads * 2;
     }
 
     private static ConnectionMask maskFor(Cell cell, Set<Cell> cells) {
@@ -249,16 +395,26 @@ class FramePlanTest {
                         && part.incidentTo(first) && part.incidentTo(second));
     }
 
+    private static boolean hasVerticalCorner(
+            ConnectionMask mask,
+            NodeDirection first,
+            NodeDirection second
+    ) {
+        return FramePlan.parts(mask).stream()
+                .anyMatch(part -> part.role() == FramePlan.Role.VERTICAL_EDGE
+                        && part.incidentTo(first) && part.incidentTo(second));
+    }
+
     private static int roleCount(ConnectionMask mask, FramePlan.Role role) {
         return (int) FramePlan.parts(mask).stream()
                 .filter(part -> part.role() == role)
                 .count();
     }
 
-    private static int nonUpperPartCount(ConnectionMask mask) {
+    private static int lowerPartCount(ConnectionMask mask) {
         return (int) FramePlan.parts(mask).stream()
-                .filter(part -> part.role() != FramePlan.Role.UPPER_EDGE)
-                .filter(part -> part.role() != FramePlan.Role.UPPER_CORNER)
+                .filter(part -> part.role() == FramePlan.Role.LOWER_EDGE
+                        || part.role() == FramePlan.Role.LOWER_CORNER)
                 .count();
     }
 
@@ -342,6 +498,9 @@ class FramePlanTest {
             return Math.min(x1, other.x1) > Math.max(x0, other.x0)
                     && Math.min(z1, other.z1) > Math.max(z0, other.z0);
         }
+    }
+
+    private record HorizontalFace(float y, Rectangle footprint) {
     }
 
     private record PartShape(

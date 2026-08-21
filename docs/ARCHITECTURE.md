@@ -41,13 +41,17 @@ project-authored planar coordinate from the complete cage, so a narrow face
 samples a narrow texture strip rather than the full texture.
 
 The top surface is one upward quad per admitted visible node at local
-`y=11/8`. A cardinal neighbor extends that node's sheet to the exact local cell
-boundary and removes the entire shared upper edge rail. An upper corner joint
-is retained when either incident side is exposed and omitted only when both
-incident sides connect. Sheets therefore meet at boundaries without positive
-area overlap; 2-by-2 layouts have no internal upper cross. Lower rails,
-vertical rails, and conservative vertical-cap behavior otherwise remain
-unchanged. UP/DOWN never omit caps or synthesize bridges.
+`y=351/256`, exactly the `1/256` outset below the top-rail underside. This
+project-authored recess prevents a sheet from sharing a plane with any
+horizontal frame face. A cardinal neighbor extends that node's sheet to the
+exact local cell boundary and removes the entire shared upper edge rail. An
+upper corner joint and its vertical corner post are retained when either
+incident side is exposed and omitted only when both incident sides connect.
+Sheets therefore meet at boundaries without positive area overlap; 2-by-2
+layouts have neither an internal upper cross nor a raised central post cluster.
+Straight seam endpoints and L perimeters retain their posts. Lower rails and
+corners, plus conservative vertical-cap behavior otherwise, remain unchanged.
+UP/DOWN never omit caps or synthesize bridges.
 
 The sheet material is a uniform 1-by-1 RGBA `(232,236,236,48)` image generated
 with BlueMap's MIT `Texture.from` API during resource-extension bake, after
@@ -56,7 +60,8 @@ collection. Any preexisting key, generation error, or post-generation identity
 mismatch leaves the profile inactive. Render-pass construction verifies the
 exact generated image and both texture-gallery material indices again. No PNG
 is bundled. The single upward face and all topology rules are independent
-visual approximations from screenshot evidence, not client parity.
+visual approximations from screenshot evidence, including the `1/256`
+depth-order gap, not client parity.
 
 The emitter retains the texture gallery and the two stable resource keys, not
 their numeric material IDs. BlueMap may clear and repopulate the same gallery

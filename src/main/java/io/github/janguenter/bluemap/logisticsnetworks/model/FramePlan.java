@@ -12,7 +12,8 @@ public final class FramePlan {
     public static final float OUTSET = 1F / 256F;
     public static final float Y_MIN = 1F / 2F;
     public static final float HEIGHT = 1F;
-    public static final float SHEET_Y = Y_MIN + HEIGHT - THICKNESS;
+    /** Project-authored depth-order gap below the top-rail underside. */
+    public static final float SHEET_Y = Y_MIN + HEIGHT - THICKNESS - OUTSET;
 
     private static final float HORIZONTAL_MIN = -OUTSET;
     private static final float HORIZONTAL_MAX = 1F + OUTSET;
@@ -210,8 +211,9 @@ public final class FramePlan {
             int connectedIncidentSides = mask.bits() & horizontalSides;
             return switch (role) {
                 case UPPER_EDGE -> connectedIncidentSides != 0;
-                case UPPER_CORNER -> connectedIncidentSides == horizontalSides;
-                case LOWER_CORNER, LOWER_EDGE, VERTICAL_EDGE -> false;
+                case UPPER_CORNER, VERTICAL_EDGE ->
+                        connectedIncidentSides == horizontalSides;
+                case LOWER_CORNER, LOWER_EDGE -> false;
             };
         }
 
