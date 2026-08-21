@@ -30,17 +30,21 @@ not part of the root orchestration repository.
 - Never copy or adapt LogisticsNetworks renderer algorithms, source, classes,
   models, textures, captures, or meshes. The operator-installed node texture
   is referenced at runtime and never packaged.
-- `gallery/**` is reserved for a later natural fixture and owner review. Do
-  not create, edit, stage, or delete it during prototype implementation.
+- Keep `gallery/**` deterministic and synthetic. It is the accepted disposable
+  staging fixture, but it is not natural saved-NBT or exact-client evidence.
 
 ## Minimum gate
 
 ```bash
 gradle --no-daemon \
   -PlogisticsNetworksJar=/absolute/path/logisticsnetworks-1.21.1-1.10.1.jar \
+  -PreleaseTag=v0.1.0-alpha.1 \
   clean check build generatePomFileForAddonPublication \
-  generateMetadataFileForAddonPublication
+  generateMetadataFileForAddonPublication verifyPublicationArtifacts \
+  verifyReleaseCandidate
 ```
 
-Do not claim natural-fixture behavior, client parity, staging, owner visual
-acceptance, release, publication, or deployment until each exact gate runs.
+Do not claim natural-fixture behavior, client parity, publication, or
+deployment unless that exact gate runs. Release promotion also requires the
+independent audit, hosted CI, exact annotated tag, and publication checks in
+`docs/RELEASING.md`.
