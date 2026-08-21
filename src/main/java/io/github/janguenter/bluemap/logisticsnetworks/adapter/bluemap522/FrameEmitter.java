@@ -74,12 +74,13 @@ final class FrameEmitter {
         }
     }
 
-    private static boolean omitted(
+    static boolean omitted(
             NodeDirection direction,
             FramePlan.Part part,
             ConnectionMask connections
     ) {
         return connections.contains(direction)
+                && FramePlan.seamFacesMayBeOmitted(direction)
                 && part.touches(direction);
     }
 
@@ -105,8 +106,14 @@ final class FrameEmitter {
         TileModel model = target.getTileModel();
         model.setPositions(start, ax, ay, az, bx, by, bz, cx, cy, cz);
         model.setPositions(start + 1, ax, ay, az, cx, cy, cz, dx, dy, dz);
-        model.setUvs(start, 0F, 1F, 1F, 1F, 1F, 0F);
-        model.setUvs(start + 1, 0F, 1F, 1F, 0F, 0F, 0F);
+        model.setUvs(start,
+                projectedU(direction, ax, ay, az), projectedV(direction, ax, ay, az),
+                projectedU(direction, bx, by, bz), projectedV(direction, bx, by, bz),
+                projectedU(direction, cx, cy, cz), projectedV(direction, cx, cy, cz));
+        model.setUvs(start + 1,
+                projectedU(direction, ax, ay, az), projectedV(direction, ax, ay, az),
+                projectedU(direction, cx, cy, cz), projectedV(direction, cx, cy, cz),
+                projectedU(direction, dx, dy, dz), projectedV(direction, dx, dy, dz));
         int material = textures.get(texture);
         model.setMaterialIndex(start, material);
         model.setMaterialIndex(start + 1, material);
@@ -120,6 +127,25 @@ final class FrameEmitter {
         model.setSunlight(start + 1, light.sunlight());
         model.setBlocklight(start, light.blocklight());
         model.setBlocklight(start + 1, light.blocklight());
+    }
+
+    static float projectedU(Direction direction, float x, float y, float z) {
+        return switch (direction) {
+            case DOWN, UP, NORTH, SOUTH -> unitCoordinate(x);
+            case WEST, EAST -> unitCoordinate(z);
+        };
+    }
+
+    static float projectedV(Direction direction, float x, float y, float z) {
+        return switch (direction) {
+            case DOWN, UP -> unitCoordinate(z);
+            case NORTH, SOUTH, WEST, EAST ->
+                    1F - unitCoordinate((y - FramePlan.Y_MIN) / FramePlan.HEIGHT);
+        };
+    }
+
+    private static float unitCoordinate(float coordinate) {
+        return Math.max(0F, Math.min(1F, coordinate));
     }
 
     private static LightSample sampleLight(BlockNeighborhood block, Direction direction) {

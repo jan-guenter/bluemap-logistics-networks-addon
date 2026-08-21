@@ -31,12 +31,23 @@ differences as frame geometry, while any unsupported alternative fails the
 host closed.
 
 The geometry program is project-owned: eight corner joints and twelve thin
-axis-aligned edge bars around a unit cube. Its outer envelope has a fixed
-`1/64`-block outset so stock full-cube faces cannot depth-sort over coplanar
-overlay fragments. A connection removes the eight coplanar part faces on the
-corresponding side. It does not interpret or translate the upstream
-entity-model JSON and does not reproduce the upstream client renderer's
-procedural geometry.
+axis-aligned edge bars around the upper half of the `AttachedPos` host. Its
+bottom rail lies at host mid-height and its top rail lies on the host top
+plane. The `1/8`-block rails and `1/256`-block outer offset are provisional
+project-authored choices pending a fresh render. Each vertex receives a
+project-authored planar coordinate from the complete frame, so a narrow face
+samples a narrow texture strip rather than the full texture. The screenshot
+comparison motivated this mapping but does not prove the cause of the visual
+difference or establish client parity.
+
+Seam omission is contact-gated. Horizontal neighboring envelopes overlap by
+`1/128` block across their shared plane and may remove the eight matching
+caps. Vertically adjacent upper-half frames have a `63/128`-block envelope
+gap, so UP/DOWN connections retain all caps and each frame stays independently
+closed. No bridge is synthesized without black-box evidence for one. The pass
+retains the complete six-way connection mask for bounded indexing and future
+evidence. It does not interpret or translate upstream entity-model JSON or
+reproduce upstream client renderer geometry.
 
 Before emission the pass mirrors BlueMap's stock entity cave-removal light
 guard. Cutaway maps therefore do not retain a node overlay after the host is

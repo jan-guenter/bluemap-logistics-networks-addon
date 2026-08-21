@@ -12,11 +12,16 @@ It registers a BlueMap entity DTO before world NBT is read, retains only
 pass to build six-way adjacency.
 
 Visible nodes receive an independently authored cuboid frame made from eight
-corner joints and twelve edge bars. A fixed `1/64`-block outset keeps its
-visible surfaces outside the stock host model. An adjacent visible and valid
-node removes the matching coplanar seam faces so
-the frames meet cleanly. A visible invalid node still receives its own frame, but cannot
-be selected as another node's neighbor. Hidden nodes emit no geometry.
+corner joints and twelve edge bars. The half-block-tall frame occupies the
+upper half of the `AttachedPos` host. Provisional project-authored dimensions
+use `1/8`-block rails and a `1/256`-block outset. Frame-wide planar UVs are a
+project-authored response to the visually prominent prototype texture
+repetition; screenshot causation or client parity is not claimed. An adjacent
+visible and valid node removes matching seam faces only where the
+translated envelopes contact horizontally. Vertically adjacent upper-half
+frames remain `63/128` block apart, keep their caps, and receive no invented
+bridge geometry. A visible invalid node still receives its own frame, but
+cannot be selected as another node's neighbor. Hidden nodes emit no geometry.
 
 This first slice deliberately supports only ordinary resource-model outcomes
 containing one unrotated `[0,0,0]..[16,16,16]` element with all six faces and
