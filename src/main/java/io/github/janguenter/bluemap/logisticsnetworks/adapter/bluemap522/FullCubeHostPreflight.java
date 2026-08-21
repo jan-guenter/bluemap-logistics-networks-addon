@@ -50,6 +50,12 @@ final class FullCubeHostPreflight {
         return true;
     }
 
+    /** The corrected cage occupies the block above the attached full-cube host. */
+    static boolean hasClearHeadroom(BlockNeighborhood block) {
+        BlockState above = block.getNeighborBlock(0, 1, 0).getBlockState();
+        return above != null && above.isAir();
+    }
+
     static VariantSet selectUniqueVariantSet(Variants variants, BlockState worldState) {
         if (variants == null || variants.getVariants() == null || worldState == null) {
             return null;

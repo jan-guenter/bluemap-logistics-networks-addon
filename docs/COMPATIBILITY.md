@@ -9,6 +9,7 @@ Supported only as a prototype for:
 - LogisticsNetworks `1.10.1`, exact JAR SHA-256
   `d94395da601ce93d8d7c9ffc434a018f6f46488303c654f6d6d5747961f56187`.
 
-The computer block and all non-node content remain stock. Arbitrary host-shape
-parity is not claimed. A new pack, BlueMap build, or LogisticsNetworks byte
-identity requires a fresh investigation and profile.
+The computer block and all non-node content remain stock. A node overlay also
+requires exact air in the block above its attached full-cube host. Arbitrary
+host-shape or client-renderer parity is not claimed. A new pack, BlueMap build,
+or LogisticsNetworks byte identity requires a fresh investigation and profile.

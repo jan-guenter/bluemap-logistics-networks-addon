@@ -13,7 +13,10 @@ world NBT are constructed:
 For one tile the pass queries one block beyond the X/Z tile boundary, caps
 matching node entities at 1,024, validates base entity position against
 `AttachedPos` at either the exact placement-height or centered-height origin,
-and preflights the attached host resource model. It drops
+and preflights the attached host resource model. Because the overlay reaches
+into the block above the host, that exact block must report an air state before
+the node is indexed. This rejects obstructed headroom and suppresses the lower
+overlay in a vertically stacked full-cube pair. It drops
 duplicate attached positions atomically, sorts the remaining positions, and
 computes a six-bit neighbor mask. An exact-position wrapper primes BlueMap's
 modulo-indexed neighborhood cache before every sparse host lookup. Only
@@ -31,23 +34,37 @@ differences as frame geometry, while any unsupported alternative fails the
 host closed.
 
 The geometry program is project-owned: eight corner joints and twelve thin
-axis-aligned edge bars around the upper half of the `AttachedPos` host. Its
-bottom rail lies at host mid-height and its top rail lies on the host top
-plane. The `1/8`-block rails and `1/256`-block outer offset are provisional
-project-authored choices pending a fresh render. Each vertex receives a
-project-authored planar coordinate from the complete frame, so a narrow face
-samples a narrow texture strip rather than the full texture. The screenshot
-comparison motivated this mapping but does not prove the cause of the visual
-difference or establish client parity.
+axis-aligned edge bars form a one-block-tall cage over local `y=1/2..3/2`.
+The `1/8`-block rails and `1/256`-block outer offset remain provisional
+project-authored choices pending a fresh render. Each frame vertex receives a
+project-authored planar coordinate from the complete cage, so a narrow face
+samples a narrow texture strip rather than the full texture.
 
-Seam omission is contact-gated. Horizontal neighboring envelopes overlap by
-`1/128` block across their shared plane and may remove the eight matching
-caps. Vertically adjacent upper-half frames have a `63/128`-block envelope
-gap, so UP/DOWN connections retain all caps and each frame stays independently
-closed. No bridge is synthesized without black-box evidence for one. The pass
-retains the complete six-way connection mask for bounded indexing and future
-evidence. It does not interpret or translate upstream entity-model JSON or
-reproduce upstream client renderer geometry.
+The top surface is one upward quad per admitted visible node at local
+`y=11/8`. A cardinal neighbor extends that node's sheet to the exact local cell
+boundary and removes the entire shared upper edge rail. An upper corner joint
+is retained when either incident side is exposed and omitted only when both
+incident sides connect. Sheets therefore meet at boundaries without positive
+area overlap; 2-by-2 layouts have no internal upper cross. Lower rails,
+vertical rails, and conservative vertical-cap behavior otherwise remain
+unchanged. UP/DOWN never omit caps or synthesize bridges.
+
+The sheet material is a uniform 1-by-1 RGBA `(232,236,236,48)` image generated
+with BlueMap's MIT `Texture.from` API during resource-extension bake, after
+ordinary texture loading. The synthetic key is reserved during texture
+collection. Any preexisting key, generation error, or post-generation identity
+mismatch leaves the profile inactive. Render-pass construction verifies the
+exact generated image and both texture-gallery material indices again. No PNG
+is bundled. The single upward face and all topology rules are independent
+visual approximations from screenshot evidence, not client parity.
+
+The emitter retains the texture gallery and the two stable resource keys, not
+their numeric material IDs. BlueMap may clear and repopulate the same gallery
+while preserving existing render-pass instances, which can renumber both IDs.
+Every emit therefore resolves and validates the current nonzero, distinct IDs
+before the first `TileModel` allocation. A missing or aliased mapping throws
+before any custom geometry is added, allowing the pass-level atomic rollback
+contract to remain intact.
 
 Before emission the pass mirrors BlueMap's stock entity cave-removal light
 guard. Cutaway maps therefore do not retain a node overlay after the host is

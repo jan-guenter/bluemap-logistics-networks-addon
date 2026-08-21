@@ -11,16 +11,28 @@ It registers a BlueMap entity DTO before world NBT is read, retains only
 `AttachedPos`, `Valid`, and `RenderVisible`, then uses a bounded custom render
 pass to build six-way adjacency.
 
-Visible nodes receive an independently authored cuboid frame made from eight
-corner joints and twelve edge bars. The half-block-tall frame occupies the
-upper half of the `AttachedPos` host. Provisional project-authored dimensions
-use `1/8`-block rails and a `1/256`-block outset. Frame-wide planar UVs are a
-project-authored response to the visually prominent prototype texture
-repetition; screenshot causation or client parity is not claimed. An adjacent
-visible and valid node removes matching seam faces only where the
-translated envelopes contact horizontally. Vertically adjacent upper-half
-frames remain `63/128` block apart, keep their caps, and receive no invented
-bridge geometry. A visible invalid node still receives its own frame, but
+Visible nodes receive an independently authored cuboid cage made from eight
+corner joints and twelve edge bars. The one-block-tall cage spans local
+`y=1/2..3/2`, leaving a visibly empty upper half above the full-cube host.
+Provisional project-authored dimensions use `1/8`-block rails and a
+`1/256`-block outset. Frame-wide planar UVs are a project-authored response to
+the visually prominent prototype texture repetition; screenshot causation or
+client parity is not claimed.
+
+One upward top-sheet quad sits at local `y=11/8`, just below the top rail. Its
+uniform pale-neutral RGBA texture is generated in memory under the synthetic
+`bluemap_logistics_networks` namespace; no sheet PNG or upstream glass asset is
+packaged. An isolated sheet fills the inner aperture. Each evidenced cardinal
+neighbor extends it exactly to the shared cell boundary, removes that entire
+upper edge rail, and removes an upper corner joint only when both incident
+sides connect. This produces project-authored isolated, straight, L-shaped,
+and 2-by-2 surface hypotheses without an internal upper cross. The single
+upward face is a visual approximation for the observed up surface, not a
+client-renderer reproduction.
+
+Because the cage extends into `AttachedPos.UP`, that exact block must be air or
+the node overlay fails closed. Vertical masks retain closed caps and receive no
+invented bridges. A visible invalid node still receives its own frame, but
 cannot be selected as another node's neighbor. Hidden nodes emit no geometry.
 
 This first slice deliberately supports only ordinary resource-model outcomes
@@ -34,10 +46,10 @@ partial, dynamic, or otherwise ambiguous hosts receive no node overlay. The
 underlying host, including `logisticsnetworks:computer`, remains stock BlueMap
 output.
 
-The frame references the operator-installed
-`logisticsnetworks:entity/node` texture. The upstream mod is All Rights
-Reserved; this project packages no upstream source, class, model, texture,
-asset, algorithm, or derived mesh.
+The frame references the operator-installed `logisticsnetworks:entity/node`
+texture. The sheet uses only the generated project-owned texture described
+above. The upstream mod is All Rights Reserved; this project packages no
+upstream source, class, model, texture, asset, algorithm, or derived mesh.
 
 ## Build
 
@@ -52,5 +64,5 @@ The production JAR is a plain add-on for BlueMap's `packs` directory. It has
 no NeoForge metadata, bundled dependencies, or client hooks. Removing it and
 restarting restores BlueMap's ordinary behavior without changing world data.
 
-Natural entity-NBT fixture capture, modded-client comparison, disposable
-staging, owner visual acceptance, and any release remain open gates.
+Natural entity-NBT fixture capture, a fresh BlueMap render of this revised
+hypothesis, owner visual acceptance, and any release remain open gates.

@@ -14,15 +14,20 @@ import io.github.janguenter.bluemap.logisticsnetworks.model.ConnectionMask;
 import io.github.janguenter.bluemap.logisticsnetworks.model.FramePlan;
 import io.github.janguenter.bluemap.logisticsnetworks.model.NodeDirection;
 
-/** Emits the project-owned frame using an operator-provided texture key. */
+import java.util.List;
+
+/** Emits the project-owned frame and generated translucent top sheet. */
 final class FrameEmitter {
 
     private final TextureGallery textures;
-    private final Key texture;
+    private final Key frameTexture;
+    private final Key sheetTexture;
 
-    FrameEmitter(TextureGallery textures, Key texture) {
+    FrameEmitter(TextureGallery textures, Key frameTexture, Key sheetTexture) {
         this.textures = textures;
-        this.texture = texture;
+        this.frameTexture = frameTexture;
+        this.sheetTexture = sheetTexture;
+        resolveMaterials();
     }
 
     void emit(
@@ -30,16 +35,19 @@ final class FrameEmitter {
             TileModelView target,
             ConnectionMask connections
     ) {
-        for (FramePlan.Part part : FramePlan.parts()) {
-            box(block, target, part, connections);
+        MaterialIds materials = resolveMaterials();
+        for (FramePlan.Part part : FramePlan.parts(connections)) {
+            box(block, target, part, connections, materials.frame());
         }
+        sheet(block, target, FramePlan.topSheet(connections), materials.sheet());
     }
 
     private void box(
             BlockNeighborhood block,
             TileModelView target,
             FramePlan.Part part,
-            ConnectionMask connections
+            ConnectionMask connections,
+            int material
     ) {
         float x0 = part.x0();
         float y0 = part.y0();
@@ -50,28 +58,67 @@ final class FrameEmitter {
 
         if (!omitted(NodeDirection.DOWN, part, connections)) {
             quad(block, target, Direction.DOWN,
-                    x0, y0, z0, x1, y0, z0, x1, y0, z1, x0, y0, z1);
+                    x0, y0, z0, x1, y0, z0, x1, y0, z1, x0, y0, z1,
+                    material);
         }
         if (!omitted(NodeDirection.UP, part, connections)) {
             quad(block, target, Direction.UP,
-                    x0, y1, z1, x1, y1, z1, x1, y1, z0, x0, y1, z0);
+                    x0, y1, z1, x1, y1, z1, x1, y1, z0, x0, y1, z0,
+                    material);
         }
         if (!omitted(NodeDirection.NORTH, part, connections)) {
             quad(block, target, Direction.NORTH,
-                    x1, y0, z0, x0, y0, z0, x0, y1, z0, x1, y1, z0);
+                    x1, y0, z0, x0, y0, z0, x0, y1, z0, x1, y1, z0,
+                    material);
         }
         if (!omitted(NodeDirection.SOUTH, part, connections)) {
             quad(block, target, Direction.SOUTH,
-                    x0, y0, z1, x1, y0, z1, x1, y1, z1, x0, y1, z1);
+                    x0, y0, z1, x1, y0, z1, x1, y1, z1, x0, y1, z1,
+                    material);
         }
         if (!omitted(NodeDirection.WEST, part, connections)) {
             quad(block, target, Direction.WEST,
-                    x0, y0, z0, x0, y0, z1, x0, y1, z1, x0, y1, z0);
+                    x0, y0, z0, x0, y0, z1, x0, y1, z1, x0, y1, z0,
+                    material);
         }
         if (!omitted(NodeDirection.EAST, part, connections)) {
             quad(block, target, Direction.EAST,
-                    x1, y0, z1, x1, y0, z0, x1, y1, z0, x1, y1, z1);
+                    x1, y0, z1, x1, y0, z0, x1, y1, z0, x1, y1, z1,
+                    material);
         }
+    }
+
+    private void sheet(
+            BlockNeighborhood block,
+            TileModelView target,
+            FramePlan.TopSheet sheet,
+            int material
+    ) {
+        SheetQuad geometry = sheetQuad(sheet);
+        quad(block, target, Direction.UP,
+                geometry.a().x(), geometry.a().y(), geometry.a().z(),
+                geometry.b().x(), geometry.b().y(), geometry.b().z(),
+                geometry.c().x(), geometry.c().y(), geometry.c().z(),
+                geometry.d().x(), geometry.d().y(), geometry.d().z(),
+                material);
+    }
+
+    private MaterialIds resolveMaterials() {
+        int frame = textures.get(frameTexture);
+        int sheet = textures.get(sheetTexture);
+        if (frame <= 0 || sheet <= 0 || frame == sheet) {
+            throw new IllegalStateException("frame or sheet texture is unavailable");
+        }
+        return new MaterialIds(frame, sheet);
+    }
+
+    static SheetQuad sheetQuad(FramePlan.TopSheet sheet) {
+        return new SheetQuad(
+                new Vertex(sheet.x0(), sheet.y(), sheet.z1()),
+                new Vertex(sheet.x1(), sheet.y(), sheet.z1()),
+                new Vertex(sheet.x1(), sheet.y(), sheet.z0()),
+                new Vertex(sheet.x0(), sheet.y(), sheet.z0())
+        );
     }
 
     static boolean omitted(
@@ -100,7 +147,8 @@ final class FrameEmitter {
             float cz,
             float dx,
             float dy,
-            float dz
+            float dz,
+            int material
     ) {
         int start = target.add(2);
         TileModel model = target.getTileModel();
@@ -114,7 +162,6 @@ final class FrameEmitter {
                 projectedU(direction, ax, ay, az), projectedV(direction, ax, ay, az),
                 projectedU(direction, cx, cy, cz), projectedV(direction, cx, cy, cz),
                 projectedU(direction, dx, dy, dz), projectedV(direction, dx, dy, dz));
-        int material = textures.get(texture);
         model.setMaterialIndex(start, material);
         model.setMaterialIndex(start + 1, material);
         model.setColor(start, 1F, 1F, 1F);
@@ -162,5 +209,20 @@ final class FrameEmitter {
     }
 
     private record LightSample(int sunlight, int blocklight) {
+    }
+
+    private record MaterialIds(int frame, int sheet) {
+    }
+
+    record Vertex(float x, float y, float z) {
+    }
+
+    record Triangle(Vertex a, Vertex b, Vertex c) {
+    }
+
+    record SheetQuad(Vertex a, Vertex b, Vertex c, Vertex d) {
+        List<Triangle> triangles() {
+            return List.of(new Triangle(a, b, c), new Triangle(a, c, d));
+        }
     }
 }

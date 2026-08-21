@@ -126,6 +126,7 @@ tasks.register('verifyProductionJar') {
             def required = [
                     'bluemap.addon.json',
                     'bluemap-logistics-networks/profiles/logisticsnetworks/1.10.1/profile.json',
+                    'io/github/janguenter/bluemap/logisticsnetworks/adapter/bluemap522/SyntheticSheetTexture.class',
                     'META-INF/LICENSE-bluemap-logistics-networks-addon',
                     'META-INF/NOTICE-bluemap-logistics-networks-addon.md',
                     'META-INF/THIRD_PARTY-bluemap-logistics-networks-addon.md',
@@ -149,6 +150,7 @@ tasks.register('verifyProductionJar') {
 
             def forbidden = entries.findAll {
                 it.endsWith('.jar')
+                        || it.endsWith('.png')
                         || it == 'META-INF/neoforge.mods.toml'
                         || it == 'fabric.mod.json'
                         || it.endsWith('.mixins.json')
@@ -180,6 +182,7 @@ tasks.register('verifySourcesJar') {
             def required = [
                     'io/github/janguenter/bluemap/logisticsnetworks/BlueMapLogisticsNetworksAddon.java',
                     'io/github/janguenter/bluemap/logisticsnetworks/adapter/bluemap522/LogisticsNodeRenderPass.java',
+                    'io/github/janguenter/bluemap/logisticsnetworks/adapter/bluemap522/SyntheticSheetTexture.java',
                     'bluemap.addon.json',
                     'bluemap-logistics-networks/profiles/logisticsnetworks/1.10.1/profile.json',
                     'META-INF/LICENSE-bluemap-logistics-networks-addon',
@@ -198,6 +201,7 @@ tasks.register('verifySourcesJar') {
             def forbidden = entries.findAll {
                 it.endsWith('.class')
                         || it.endsWith('.jar')
+                        || it.endsWith('.png')
                         || it.startsWith('assets/logisticsnetworks/')
                         || it.startsWith('me/almana/')
                         || it.startsWith('de/bluecolored/')
@@ -243,7 +247,7 @@ publishing {
             artifactId = artifact_id
             pom {
                 name = addon_name
-                description = 'Exact-profile static BlueMap frames for LogisticsNetworks nodes.'
+                description = 'Exact-profile static BlueMap cages and top surfaces for LogisticsNetworks nodes.'
                 url = 'https://github.com/jan-guenter/bluemap-logistics-networks-addon'
                 licenses {
                     license {

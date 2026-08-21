@@ -17,6 +17,8 @@ import de.bluecolored.bluemap.core.world.block.BlockAccess;
 import de.bluecolored.bluemap.core.world.block.BlockNeighborhood;
 import org.junit.jupiter.api.Test;
 
+import java.util.Set;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -69,6 +71,26 @@ class ExactBlockNeighborhoodTest {
         ));
     }
 
+    @Test
+    void requiresExactAirInTheBlockAboveTheHost() {
+        BlockNeighborhood clear = headroomNeighborhood(Set.of(64));
+        clear.set(0, 64, 0);
+        assertTrue(FullCubeHostPreflight.hasClearHeadroom(clear));
+
+        BlockNeighborhood blocked = headroomNeighborhood(Set.of(64, 65));
+        blocked.set(0, 64, 0);
+        assertFalse(FullCubeHostPreflight.hasClearHeadroom(blocked));
+    }
+
+    @Test
+    void verticalFullCubePairSuppressesTheLowerOverlayButAllowsTheClearUpperOne() {
+        BlockNeighborhood pair = headroomNeighborhood(Set.of(64, 65));
+        pair.set(0, 64, 0);
+        assertFalse(FullCubeHostPreflight.hasClearHeadroom(pair));
+        pair.set(0, 65, 0);
+        assertTrue(FullCubeHostPreflight.hasClearHeadroom(pair));
+    }
+
     private static BlockNeighborhood neighborhood(
             int skylight,
             int blocklight,
@@ -90,6 +112,15 @@ class ExactBlockNeighborhoodTest {
         assertEquals(
                 Key.parse("test:position_" + x + "_" + y + "_" + z),
                 block.getBlockState().getId()
+        );
+    }
+
+    private static BlockNeighborhood headroomNeighborhood(Set<Integer> solidY) {
+        return new ExactBlockNeighborhood(
+                new YStateBlockAccess(solidY),
+                new ResourcePack(new PackVersion(34, 0)),
+                new TestRenderSettings(),
+                DimensionType.OVERWORLD
         );
     }
 
@@ -152,6 +183,79 @@ class ExactBlockNeighborhoodTest {
         @Override
         public LightData getLightData() {
             return new LightData(skylight, blocklight);
+        }
+
+        @Override
+        public Biome getBiome() {
+            return Biome.DEFAULT;
+        }
+
+        @Override
+        public BlockEntity getBlockEntity() {
+            return null;
+        }
+
+        @Override
+        public boolean hasOceanFloorY() {
+            return false;
+        }
+
+        @Override
+        public int getOceanFloorY() {
+            return 0;
+        }
+    }
+
+    private static final class YStateBlockAccess implements BlockAccess {
+
+        private final Set<Integer> solidY;
+        private int x;
+        private int y;
+        private int z;
+
+        private YStateBlockAccess(Set<Integer> solidY) {
+            this.solidY = Set.copyOf(solidY);
+        }
+
+        @Override
+        public void set(int newX, int newY, int newZ) {
+            x = newX;
+            y = newY;
+            z = newZ;
+        }
+
+        @Override
+        public BlockAccess copy() {
+            YStateBlockAccess copy = new YStateBlockAccess(solidY);
+            copy.set(x, y, z);
+            return copy;
+        }
+
+        @Override
+        public int getX() {
+            return x;
+        }
+
+        @Override
+        public int getY() {
+            return y;
+        }
+
+        @Override
+        public int getZ() {
+            return z;
+        }
+
+        @Override
+        public BlockState getBlockState() {
+            return solidY.contains(y)
+                    ? new BlockState(Key.parse("test:full_cube"))
+                    : BlockState.AIR;
+        }
+
+        @Override
+        public LightData getLightData() {
+            return new LightData(15, 0);
         }
 
         @Override

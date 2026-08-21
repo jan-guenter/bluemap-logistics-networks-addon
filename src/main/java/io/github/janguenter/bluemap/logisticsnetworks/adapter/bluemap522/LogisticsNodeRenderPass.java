@@ -49,10 +49,7 @@ final class LogisticsNodeRenderPass implements RenderPass {
         this.resourcePack = resourcePack;
         this.renderSettings = renderSettings;
         this.runtime = runtime;
-        this.emitter = new FrameEmitter(
-                textureGallery,
-                LogisticsNetworks1101Profile.NODE_TEXTURE
-        );
+        this.emitter = createEmitter(resourcePack, textureGallery, runtime);
         this.hostPreflight = new FullCubeHostPreflight(resourcePack);
     }
 
@@ -65,7 +62,7 @@ final class LogisticsNodeRenderPass implements RenderPass {
             TileModelView tileModel,
             TileMetaConsumer tileMetaConsumer
     ) {
-        if (!runtime.isActive()) {
+        if (!runtime.isActive() || emitter == null) {
             return;
         }
         int passStart = tileModel.getTileModel().size();
@@ -93,7 +90,8 @@ final class LogisticsNodeRenderPass implements RenderPass {
                 }
                 BlockPosition attached = snapshot.attachedPos();
                 block.set(attached.x(), attached.y(), attached.z());
-                if (!hostPreflight.supports(block)) {
+                if (!hostPreflight.supports(block)
+                        || !FullCubeHostPreflight.hasClearHeadroom(block)) {
                     continue;
                 }
                 index.add(snapshot);
@@ -124,7 +122,7 @@ final class LogisticsNodeRenderPass implements RenderPass {
         }
     }
 
-    private static List<LogisticsNodeEntityData> collect(
+    static List<LogisticsNodeEntityData> collect(
             World world,
             Vector3i modelMin,
             Vector3i modelMax
@@ -141,7 +139,7 @@ final class LogisticsNodeRenderPass implements RenderPass {
         return count[0] > MAX_NODE_ENTITIES ? null : List.copyOf(result);
     }
 
-    private static void collectOne(
+    static void collectOne(
             Entity entity,
             List<LogisticsNodeEntityData> result,
             int[] count
@@ -210,8 +208,34 @@ final class LogisticsNodeRenderPass implements RenderPass {
         return value < Integer.MIN_VALUE + delta ? Integer.MIN_VALUE : value - delta;
     }
 
-    private static void resetPass(TileModelView tileModel, int passStart) {
+    static void resetPass(TileModelView tileModel, int passStart) {
         tileModel.getTileModel().reset(passStart);
         tileModel.initialize(passStart);
+    }
+
+    private static FrameEmitter createEmitter(
+            ResourcePack resourcePack,
+            TextureGallery textureGallery,
+            LogisticsNetworksRuntime runtime
+    ) {
+        if (!runtime.isActive()) {
+            return null;
+        }
+        if (!SyntheticSheetTexture.isExact(
+                resourcePack.getTextures().get(SyntheticSheetTexture.KEY)
+        )) {
+            runtime.fail("synthetic-sheet-texture-lifecycle-mismatch");
+            return null;
+        }
+        try {
+            return new FrameEmitter(
+                    textureGallery,
+                    LogisticsNetworks1101Profile.NODE_TEXTURE,
+                    SyntheticSheetTexture.KEY
+            );
+        } catch (RuntimeException exception) {
+            runtime.fail("render-texture-gallery-mismatch");
+            return null;
+        }
     }
 }

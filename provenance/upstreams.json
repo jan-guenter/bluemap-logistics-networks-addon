@@ -51,7 +51,7 @@
       "commit": "9be321df995a1103808621d529eb72773e719d4d",
       "api_commit": "285c9a60eff3ac2b0cab308ce1058d1565be0971",
       "license": "MIT",
-      "use": "compile-only internal API",
+      "use": "compile-only internal API including project-owned in-memory Texture.from generation",
       "redistributed": false
     }
   ]
