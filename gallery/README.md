@@ -72,26 +72,40 @@ resource.
 /function logisticsnetworks_gallery:release
 ```
 
-`build` is a strong build-once guard. Only `#builds = 0` may call the internal
-`build_once` mutator.
+`build` is a durable, two-stage build-once guard. When no build, clear, or
+verification lifecycle is pending and `#builds = 0`, it marks the build
+pending, acquires the exact four-chunk x/z `160..191` forceload, and schedules
+the guarded internal build stage after a conservative 20-tick loading window.
+That loaded stage performs cleanup, increments `#builds` exactly once, places
+the fixtures, and starts verification. Repeated `build` calls while preparation
+is pending or after the gallery is built do not schedule or mutate another
+build.
 
-**Destructive prototype-only operation:** `build_once` calls `clear`, and
-`clear` runs the exact supported `/logisticsnetworks removeNodes` command. That
-command targets **every currently loaded LogisticsNetworks node anywhere in
+**Destructive prototype-only operation:** after its 20-tick chunk-loading
+window, the loaded build stage runs the exact supported
+`/logisticsnetworks removeNodes` command before any summon. That command
+targets **every currently loaded LogisticsNetworks node anywhere in
 the command's current dimension**, including nodes outside the reserved
-envelope; it is dimension-global, not gallery-bounded, and does not make
-unloaded chunks part of the gallery. The function then clears only the bounded
-block envelope. This destructive command is intentional because
-LogisticsNetworks rejects ordinary `/kill`; use these functions only in a
-dedicated disposable prototype dimension with no state worth retaining. For a
-deliberate fresh disposable run, call `clear`, set `#builds` in objective
-`ln_gallery` back to zero, then call `build` again.
+envelope; it is dimension-global, not gallery-bounded. The shared loaded
+cleanup helper then clears only the bounded block envelope. This destructive
+command is intentional because LogisticsNetworks rejects ordinary `/kill`;
+use these functions only in a dedicated disposable prototype dimension with no
+state worth retaining.
 
-The verifier runs immediately and at 20 and 100 ticks. Every phase performs
-94 retained assertions: the build counter; four exact computer states; eleven
-exact stone hosts; the exact total node count; and, for each node, an exact
-tag count, centered identity/state NBT, plus absence of synthetic network ID,
-network name, owner, label, and upgrades. Require:
+`clear` is also a guarded two-stage lifecycle. Its preparation cancels any
+pending build and delayed verification, acquires the same four-chunk forceload,
+and waits 20 ticks before the loaded stage runs the same dimension-global
+removal and bounded block clear. The loaded clear resets the build and pending
+guards and only then removes the forceload ticket. Repeated `clear` calls while
+one is pending do not reschedule it. After clear completes, `build` may be
+called directly for a deliberate fresh disposable run.
+
+The verifier runs immediately after the final summon and again at 20 and 100
+ticks relative to that loaded build stage. Every phase performs 94 retained
+assertions: the build counter; four exact computer states; eleven exact stone
+hosts; the exact total node count; and, for each node, an exact tag count,
+centered identity/state NBT, plus absence of synthetic network ID, network
+name, owner, label, and upgrades. Require:
 
 ```text
 #immediate_checked = 94   #immediate_failures = 0
@@ -105,6 +119,10 @@ dedicated server records `/say` output in its server log even when no players
 are connected, so the aggregate score contract remains compact while the log
 identifies the exact failed assertion. Passing assertions emit no log entry.
 
-`release` cancels delayed checks and removes only this gallery's bounded
-forceload ticket. It deliberately retains the controls and synthetic nodes for
-BlueMap prototype inspection.
+`release` fails closed unless the build is complete, no lifecycle is pending,
+the gallery ticket is still held, and all three retained phase snapshots are
+exactly 94 checked with zero failures. Only then does it remove this gallery's
+bounded forceload ticket. It never cancels pending checks and deliberately
+retains the controls and synthetic nodes for BlueMap prototype inspection. If
+any phase fails, inspect the stable failure IDs and use `clear`; the loaded
+clear performs destructive cleanup before it removes the ticket.

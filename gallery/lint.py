@@ -29,6 +29,14 @@ def fail(message: str) -> None:
     raise ValueError(message)
 
 
+def command_lines(function: str) -> list[str]:
+    return [
+        line
+        for line in function.splitlines()
+        if line and not line.startswith("#")
+    ]
+
+
 def actual_connections(node: generate.Node) -> tuple[str, ...]:
     positions = {
         (candidate.x, candidate.y, candidate.z): candidate
@@ -135,36 +143,60 @@ def main() -> int:
 
     function_root = ROOT / f"datapack/data/{generate.NAMESPACE}/function"
     build = (function_root / "build.mcfunction").read_text(encoding="utf-8")
+    prepare_build = (function_root / "prepare_build.mcfunction").read_text(
+        encoding="utf-8"
+    )
     build_once = (function_root / "build_once.mcfunction").read_text(
         encoding="utf-8"
     )
+    build_loaded = (function_root / "build_loaded.mcfunction").read_text(
+        encoding="utf-8"
+    )
     clear = (function_root / "clear.mcfunction").read_text(encoding="utf-8")
+    prepare_clear = (function_root / "prepare_clear.mcfunction").read_text(
+        encoding="utf-8"
+    )
+    clear_once = (function_root / "clear_once.mcfunction").read_text(
+        encoding="utf-8"
+    )
+    clear_loaded = (function_root / "clear_loaded.mcfunction").read_text(
+        encoding="utf-8"
+    )
+    loaded_cleanup = (function_root / "loaded_cleanup.mcfunction").read_text(
+        encoding="utf-8"
+    )
     load = (function_root / "load.mcfunction").read_text(encoding="utf-8")
     release = (function_root / "release.mcfunction").read_text(encoding="utf-8")
+    release_once = (function_root / "release_once.mcfunction").read_text(
+        encoding="utf-8"
+    )
     verify = (function_root / "verify.mcfunction").read_text(encoding="utf-8")
+    verify_100t = (function_root / "verify_100t.mcfunction").read_text(
+        encoding="utf-8"
+    )
     all_functions = "\n".join(
         path.read_text(encoding="utf-8")
         for path in sorted(function_root.glob("*.mcfunction"))
     )
 
-    if len(re.findall(r"^setblock ", build_once, re.MULTILINE)) != 15:
-        fail("build_once must set exactly four computers and eleven hosts")
-    summon_lines = re.findall(r"^summon .*", build_once, re.MULTILINE)
+    if len(re.findall(r"^setblock ", build_loaded, re.MULTILINE)) != 15:
+        fail("build_loaded must set exactly four computers and eleven hosts")
+    summon_lines = re.findall(r"^summon .*", build_loaded, re.MULTILINE)
     if len(summon_lines) != len(generate.NODES):
-        fail("build_once must summon exactly eleven nodes")
+        fail("build_loaded must summon exactly eleven nodes")
     for node in generate.NODES:
         center = " ".join(generate.format_float(value, "") for value in node.center)
         expected_summon = (
             f"summon {generate.NODE_TYPE} {center} {generate.summon_nbt(node)}"
         )
-        if build_once.count(expected_summon) != 1:
+        if build_loaded.count(expected_summon) != 1:
             fail(f"missing exact synthetic summon: {node.cell}")
-    if build_once.count("Highlighted:0b") != len(generate.NODES):
+    if build_loaded.count("Highlighted:0b") != len(generate.NODES):
         fail("every synthetic node must explicitly disable highlight")
-    if "Highlighted:1b" in build_once:
+    if "Highlighted:1b" in build_loaded:
         fail("highlighted synthetic nodes are forbidden")
     for path in generate.ABSENT_DYNAMIC_PATHS + ("Channels",):
-        if path in build_once:
+        if path in build_loaded:
             fail(f"synthetic node payload injected forbidden dynamic field: {path}")
 
     retained_checks = len(
@@ -258,54 +290,194 @@ def main() -> int:
             if verify.count(expected_absence) != 2:
                 fail(f"verify lost dynamic-field absence check: {node.cell}/{path}")
 
-    guard_call = (
-        f"execute if score #builds {generate.OBJECTIVE} matches 0 run function "
-        f"{generate.NAMESPACE}:build_once"
+    expected_load_commands = [
+        f"scoreboard objectives add {generate.OBJECTIVE} dummy",
+        *(
+            f"scoreboard players add {score} {generate.OBJECTIVE} 0"
+            for score in generate.STATE_SCORES
+        ),
+    ]
+    if command_lines(load) != expected_load_commands or "forceload" in load:
+        fail("load must only initialize the durable lifecycle scores")
+
+    build_guard = (
+        f"execute if score #builds {generate.OBJECTIVE} matches 0 if score "
+        f"#build_pending {generate.OBJECTIVE} matches 0 if score #clear_pending "
+        f"{generate.OBJECTIVE} matches 0 if score #verification_pending "
+        f"{generate.OBJECTIVE} matches 0 run function "
+        f"{generate.NAMESPACE}:prepare_build"
     )
-    if build.count(guard_call) != 1 or "matches 1.. run tellraw @a" not in build:
-        fail("build wrapper must enforce and announce the build-once guard")
-    forbidden_wrapper_mutators = ("setblock ", "summon ", "kill ", "fill ")
+    if command_lines(build)[-1:] != [build_guard]:
+        fail("build must use the complete durable prepare guard")
+    if build.count(f"run function {generate.NAMESPACE}:prepare_build") != 1:
+        fail("build must invoke prepare_build at most once")
+    if "matches 1.. run tellraw @a" not in build:
+        fail("build must announce the already-built guard")
+    forbidden_wrapper_mutators = (
+        "setblock ",
+        "summon ",
+        "kill ",
+        "fill ",
+        "forceload ",
+        "schedule function ",
+        "scoreboard players set ",
+    )
     if any(token in build for token in forbidden_wrapper_mutators):
-        fail("guarded build wrapper must not mutate the gallery directly")
-    increment = f"scoreboard players add #builds {generate.OBJECTIVE} 1"
-    if build_once.count(increment) != 1 or increment in build:
-        fail("build counter must increment exactly once inside build_once")
+        fail("guarded build wrapper must not mutate or schedule directly")
 
-    if "kill " in clear:
-        fail("ordinary kill is ineffective for LogisticsNetworks nodes")
-    if re.findall(r"^logisticsnetworks removeNodes$", clear, re.MULTILINE) != [
-        "logisticsnetworks removeNodes"
-    ]:
-        fail("clear must use the exact supported dimension-global removal command")
+    expected_prepare_build = [
+        f"scoreboard players set #build_pending {generate.OBJECTIVE} 1",
+        f"forceload add {generate.FORCELOAD}",
+        f"scoreboard players set #ticket_held {generate.OBJECTIVE} 1",
+        f"schedule function {generate.NAMESPACE}:build_once 20t replace",
+    ]
+    if command_lines(prepare_build) != expected_prepare_build:
+        fail("prepare_build must guard, forceload, and wait exactly 20 ticks")
+
+    expected_build_once = (
+        f"execute if score #build_pending {generate.OBJECTIVE} matches 1 "
+        f"if score #builds {generate.OBJECTIVE} matches 0 if score "
+        f"#clear_pending {generate.OBJECTIVE} matches 0 run function "
+        f"{generate.NAMESPACE}:build_loaded"
+    )
+    if command_lines(build_once) != [expected_build_once]:
+        fail("scheduled build_once must recheck every build lifecycle guard")
+
+    expected_cleanup = [
+        "logisticsnetworks removeNodes",
+        "fill 160 99 160 191 108 191 minecraft:air",
+    ]
+    if command_lines(loaded_cleanup) != expected_cleanup:
+        fail("loaded_cleanup must contain only exact global and bounded cleanup")
     if (
-        "PROTOTYPE ONLY" not in clear
-        or "every loaded LogisticsNetworks node dimension-wide" not in clear
+        "PROTOTYPE ONLY" not in loaded_cleanup
+        or "every loaded LogisticsNetworks node dimension-wide"
+        not in loaded_cleanup
     ):
-        fail("clear must carry its explicit dimension-global destructive warning")
-    expected_clear = "fill 160 99 160 191 108 191 minecraft:air"
-    if re.findall(r"^fill .* minecraft:air$", clear, re.MULTILINE) != [
-        expected_clear
-    ]:
-        fail("clear must cover the complete bounded envelope exactly once")
-    if f"forceload add {generate.FORCELOAD}" not in build_once:
-        fail("build_once must add the exact bounded forceload ticket")
-    if f"forceload remove {generate.FORCELOAD}" not in release:
-        fail("release must remove the exact bounded forceload ticket")
-    if "forceload" in load:
-        fail("datapack load must not create a forceload ticket")
-    if "kill " in release or "fill " in release:
-        fail("release must retain gallery controls and nodes")
+        fail("loaded_cleanup must carry the destructive dimension-global warning")
+    if "kill " in all_functions:
+        fail("ordinary kill is ineffective for LogisticsNetworks nodes")
+    if all_functions.count("logisticsnetworks removeNodes") != 1:
+        fail("the exact supported global removal command must exist only in cleanup")
 
-    for phase, delay in (("20t", "20t"), ("100t", "100t")):
-        schedule = (
-            f"schedule function {generate.NAMESPACE}:verify_{phase} "
-            f"{delay} replace"
+    build_loaded_commands = command_lines(build_loaded)
+    cleanup_call = f"function {generate.NAMESPACE}:loaded_cleanup"
+    increment = f"scoreboard players add #builds {generate.OBJECTIVE} 1"
+    if build_loaded_commands[:2] != [cleanup_call, increment]:
+        fail("build_loaded must clean loaded chunks before its one build increment")
+    if all_functions.count(increment) != 1:
+        fail("build counter must increment exactly once in the complete datapack")
+    last_summon_index = max(
+        index
+        for index, line in enumerate(build_loaded_commands)
+        if line.startswith("summon ")
+    )
+    post_summon_commands = [
+        f"scoreboard players set #build_pending {generate.OBJECTIVE} 0",
+        f"scoreboard players set #verification_pending {generate.OBJECTIVE} 1",
+        f"function {generate.NAMESPACE}:verify_immediate",
+        f"schedule function {generate.NAMESPACE}:verify_20t 20t replace",
+        f"schedule function {generate.NAMESPACE}:verify_100t 100t replace",
+    ]
+    if build_loaded_commands[last_summon_index + 1 :] != post_summon_commands:
+        fail("verification phases must be scheduled relative to the final summon")
+    if "forceload" in build_loaded or f"function {generate.NAMESPACE}:clear" in build_loaded:
+        fail("build_loaded must use only the state-free loaded cleanup helper")
+
+    expected_clear_guard = (
+        f"execute if score #clear_pending {generate.OBJECTIVE} matches 0 run "
+        f"function {generate.NAMESPACE}:prepare_clear"
+    )
+    if command_lines(clear) != [expected_clear_guard]:
+        fail("public clear must be a repeat-safe prepare guard")
+
+    expected_prepare_clear = [
+        f"schedule clear {generate.NAMESPACE}:build_once",
+        f"schedule clear {generate.NAMESPACE}:verify_20t",
+        f"schedule clear {generate.NAMESPACE}:verify_100t",
+        f"scoreboard players set #build_pending {generate.OBJECTIVE} 0",
+        f"scoreboard players set #verification_pending {generate.OBJECTIVE} 0",
+        f"scoreboard players set #clear_pending {generate.OBJECTIVE} 1",
+        f"forceload add {generate.FORCELOAD}",
+        f"scoreboard players set #ticket_held {generate.OBJECTIVE} 1",
+        f"schedule function {generate.NAMESPACE}:clear_once 20t replace",
+    ]
+    if command_lines(prepare_clear) != expected_prepare_clear:
+        fail("prepare_clear must cancel, forceload, and wait exactly 20 ticks")
+
+    expected_clear_once = (
+        f"execute if score #clear_pending {generate.OBJECTIVE} matches 1 run "
+        f"function {generate.NAMESPACE}:clear_loaded"
+    )
+    if command_lines(clear_once) != [expected_clear_once]:
+        fail("scheduled clear_once must recheck its durable pending guard")
+
+    expected_clear_loaded = [
+        cleanup_call,
+        f"scoreboard players set #builds {generate.OBJECTIVE} 0",
+        f"scoreboard players set #build_pending {generate.OBJECTIVE} 0",
+        f"scoreboard players set #verification_pending {generate.OBJECTIVE} 0",
+        f"scoreboard players set #clear_pending {generate.OBJECTIVE} 0",
+        f"forceload remove {generate.FORCELOAD}",
+        f"scoreboard players set #ticket_held {generate.OBJECTIVE} 0",
+    ]
+    if command_lines(clear_loaded) != expected_clear_loaded:
+        fail("clear_loaded must clean/reset before removing its bounded ticket")
+
+    phase_complete = (
+        f"scoreboard players set #verification_pending {generate.OBJECTIVE} 0"
+    )
+    if command_lines(verify_100t)[-1:] != [phase_complete]:
+        fail("100t verification must durably complete the verification lifecycle")
+
+    release_commands = command_lines(release)
+    if release_commands != [generate.release_guard()]:
+        fail("release must use the complete fail-closed lifecycle/phase guard")
+    for score, value in (
+        ("#builds", 1),
+        ("#build_pending", 0),
+        ("#clear_pending", 0),
+        ("#verification_pending", 0),
+        ("#ticket_held", 1),
+        ("#immediate_checked", EXPECTED_CHECKS),
+        ("#immediate_failures", 0),
+        ("#20t_checked", EXPECTED_CHECKS),
+        ("#20t_failures", 0),
+        ("#100t_checked", EXPECTED_CHECKS),
+        ("#100t_failures", 0),
+    ):
+        condition = (
+            f"if score {score} {generate.OBJECTIVE} matches {value}"
         )
-        if build_once.count(schedule) != 1:
-            fail(f"missing exact {phase} retained-state schedule")
-        clear_schedule = f"schedule clear {generate.NAMESPACE}:verify_{phase}"
-        if clear.count(clear_schedule) != 1 or release.count(clear_schedule) != 1:
-            fail(f"clear/release must cancel the {phase} retained check")
+        if release.count(condition) != 1:
+            fail(f"release lost its fail-closed condition: {score}")
+    expected_release_once = [
+        f"forceload remove {generate.FORCELOAD}",
+        f"scoreboard players set #ticket_held {generate.OBJECTIVE} 0",
+    ]
+    if command_lines(release_once) != expected_release_once:
+        fail("release_once must only remove and record the bounded ticket")
+    if any(token in release for token in ("kill ", "fill ", "forceload ", "schedule ")):
+        fail("release wrapper must not mutate or cancel lifecycle work directly")
+
+    if len(
+        re.findall(
+            rf"^forceload add {generate.FORCELOAD}$",
+            all_functions,
+            re.MULTILINE,
+        )
+    ) != 2:
+        fail("only build and clear preparation may acquire the four-chunk ticket")
+    if len(
+        re.findall(
+            rf"^forceload remove {generate.FORCELOAD}$",
+            all_functions,
+            re.MULTILINE,
+        )
+    ) != 2:
+        fail("only loaded clear and verified release may remove the ticket")
+    if all_functions.count(cleanup_call) != 2:
+        fail("loaded cleanup must be shared only by build and clear")
 
     forbidden_operations = (
         "particle ",
@@ -327,7 +499,8 @@ def main() -> int:
             fail("gallery may summon only logisticsnetworks:logistics_node")
 
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
-    if "not a natural\nsaved-fixture release proof" not in readme:
+    normalized_readme = " ".join(readme.split())
+    if "not a natural saved-fixture release proof" not in normalized_readme:
         fail("README must retain the natural-fixture release blocker")
     if (
         "d94395da601ce93d8d7c9ffc434a018f6f46488303c654f6d6d5747961f56187"
@@ -337,13 +510,26 @@ def main() -> int:
     for warning in (
         "Destructive prototype-only operation",
         "exact supported `/logisticsnetworks removeNodes` command",
-        "every currently loaded LogisticsNetworks node anywhere in\n"
+        "every currently loaded LogisticsNetworks node anywhere in "
         "the command's current dimension",
         "it is dimension-global, not gallery-bounded",
-        "Never install\nor invoke this datapack in production",
+        "Never install or invoke this datapack in production",
     ):
-        if warning not in readme:
+        if warning not in normalized_readme:
             fail("README must document dimension-global destructive cleanup")
+    for lifecycle_contract in (
+        "durable, two-stage build-once guard",
+        "exact four-chunk x/z `160..191` forceload",
+        "conservative 20-tick loading window",
+        "Repeated `build` calls",
+        "`clear` is also a guarded two-stage lifecycle",
+        "Repeated `clear` calls",
+        "`release` fails closed",
+        "all three retained phase snapshots",
+        "It never cancels pending checks",
+    ):
+        if lifecycle_contract not in normalized_readme:
+            fail("README must document the guarded two-stage lifecycle")
 
     print(
         "LogisticsNetworks gallery lint passed: 4 stock controls, 11 synthetic "

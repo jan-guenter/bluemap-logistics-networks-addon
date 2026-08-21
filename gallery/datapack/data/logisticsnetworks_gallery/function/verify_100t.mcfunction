@@ -3,3 +3,4 @@ function logisticsnetworks_gallery:verify
 scoreboard players operation #100t_failures ln_gallery = #failures ln_gallery
 scoreboard players operation #100t_checked ln_gallery = #checked ln_gallery
 tellraw @a [{"text":"LogisticsNetworks gallery 100t: "},{"score":{"name":"#100t_checked","objective":"ln_gallery"}},{"text":" checks, "},{"score":{"name":"#100t_failures","objective":"ln_gallery"}},{"text":" failures"}]
+scoreboard players set #verification_pending ln_gallery 0
