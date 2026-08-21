@@ -4,8 +4,10 @@ This directory defines a tiny deterministic datapack for the exact
 LogisticsNetworks `1.10.1` prototype. The required operator artifact is
 `logisticsnetworks-1.21.1-1.10.1.jar`, 988,995 bytes, with SHA-256
 `d94395da601ce93d8d7c9ffc434a018f6f46488303c654f6d6d5747961f56187`.
-The gallery is confined to inclusive x `160..191`, y `99..108`, z `160..191`
-in a disposable staging world. It does not touch production or cluster state.
+The gallery placements and block edits are confined to inclusive x `160..191`,
+y `99..108`, z `160..191` in a disposable staging world. Its cleanup is not
+spatially bounded: see the destructive-operation warning below. Never install
+or invoke this datapack in production or in a shared dimension.
 
 This is deliberately **synthetic prototype evidence, not a natural
 saved-fixture release proof**. The node entities are created with bounded
@@ -71,11 +73,19 @@ resource.
 ```
 
 `build` is a strong build-once guard. Only `#builds = 0` may call the internal
-`build_once` mutator. `clear` cancels delayed checks, kills only
-`logisticsnetworks:logistics_node` entities inside the reserved envelope, and
-clears only that envelope. For a deliberate fresh disposable run, call
-`clear`, set `#builds` in objective `ln_gallery` back to zero, then call
-`build` again.
+`build_once` mutator.
+
+**Destructive prototype-only operation:** `build_once` calls `clear`, and
+`clear` runs the exact supported `/logisticsnetworks removeNodes` command. That
+command targets **every currently loaded LogisticsNetworks node anywhere in
+the command's current dimension**, including nodes outside the reserved
+envelope; it is dimension-global, not gallery-bounded, and does not make
+unloaded chunks part of the gallery. The function then clears only the bounded
+block envelope. This destructive command is intentional because
+LogisticsNetworks rejects ordinary `/kill`; use these functions only in a
+dedicated disposable prototype dimension with no state worth retaining. For a
+deliberate fresh disposable run, call `clear`, set `#builds` in objective
+`ln_gallery` back to zero, then call `build` again.
 
 The verifier runs immediately and at 20 and 100 ticks. Every phase performs
 94 retained assertions: the build counter; four exact computer states; eleven
@@ -88,6 +98,12 @@ network name, owner, label, and upgrades. Require:
 #20t_checked       = 94   #20t_failures       = 0
 #100t_checked      = 94   #100t_failures      = 0
 ```
+
+Each assertion has a stable semantic failure ID. A failed assertion alone
+runs `say LN_GALLERY_FAIL:<id>` before incrementing `#failures`. Minecraft's
+dedicated server records `/say` output in its server log even when no players
+are connected, so the aggregate score contract remains compact while the log
+identifies the exact failed assertion. Passing assertions emit no log entry.
 
 `release` cancels delayed checks and removes only this gallery's bounded
 forceload ticket. It deliberately retains the controls and synthetic nodes for
