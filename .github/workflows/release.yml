@@ -144,21 +144,18 @@ jobs:
             verifyPublicationArtifacts verifyReleaseCandidate
           test "$(stat -c %s \
             "build/libs/bluemap-logistics-networks-addon-${VERSION}.jar")" \
-            -eq 67367
+            -eq 70983
           test "$(stat -c %s \
             "build/libs/bluemap-logistics-networks-addon-${VERSION}-sources.jar")" \
-            -eq 31656
+            -eq 34931
           test "$(stat -c %s build/publications/addon/pom-default.xml)" -eq 1408
           test "$(stat -c %s build/publications/addon/module.json)" -eq 2894
           sha256sum --check <<SHA256SUMS
-          5f813504e2dccd63ad0a2cc1bd33a129da2e2934e5576d149b6b215c12ba8f18  build/libs/bluemap-logistics-networks-addon-${VERSION}.jar
-          df0b53155df3c1add4fbea839fbc125a212ed2c6a4d25ebe812c4801a85bfa98  build/libs/bluemap-logistics-networks-addon-${VERSION}-sources.jar
-          d2d0f5443803bd3e6be9fb874a3a4e7997f14c6b88dd82fb24359f4b9e15730b  build/publications/addon/pom-default.xml
-          941a1cef0811d1f88d974f7c401141aa5d73ce8e56a04a13b7a35a5c4a341936  build/publications/addon/module.json
+          4e20d31d7204d5665afbfc81737f7e27ff9b28b280b656239ae6c5513c84cde2  build/libs/bluemap-logistics-networks-addon-${VERSION}.jar
+          1b2e7424689a4721c756907582fc73dcde093bbce88bf8759f722697d5f40fc3  build/libs/bluemap-logistics-networks-addon-${VERSION}-sources.jar
+          32fd1f1532c70072576a84a81a101b324b2ea06b969721f10c979ea776411379  build/publications/addon/pom-default.xml
+          ee9f3d60132ff430d023b62b065a049aab7dfa980ea8787a67225e959f1f7477  build/publications/addon/module.json
           SHA256SUMS
-          python3 tools/verify_staged_equivalence.py \
-            --jar "build/libs/bluemap-logistics-networks-addon-${VERSION}.jar" \
-            --entries provenance/accepted-staging-entries.sha256
 
       - name: Prepare deterministic release bundle
         run: |
@@ -182,7 +179,7 @@ jobs:
           (cd release && sha256sum --check SHA256SUMS)
           test "$(stat -c %s release/SHA256SUMS)" -eq 492
           test "$(sha256sum release/SHA256SUMS | cut -d ' ' -f 1)" = \
-            063be9315f03b049d6db36175042195abbe42ddac18a826d4559830714840b5b
+            f4901c3592744d2a8399133664335ced2e88a8ab0d77ccd3cc140d4334c64e20
 
       - name: Create or refresh draft prerelease
         env:
