@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: MIT
  */
-package io.github.janguenter.bluemap.logisticsnetworks.adapter.bluemap522;
+package io.github.janguenter.bluemap.logisticsnetworks.adapter.bluemap523;
 
 import de.bluecolored.bluemap.core.resources.pack.resourcepack.ResourcePack;
 import de.bluecolored.bluemap.core.resources.pack.resourcepack.texture.Texture;

@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: MIT
  */
-package io.github.janguenter.bluemap.logisticsnetworks.adapter.bluemap522;
+package io.github.janguenter.bluemap.logisticsnetworks.adapter.bluemap523;
 
 import io.github.janguenter.bluemap.logisticsnetworks.model.BlockPosition;
 import io.github.janguenter.bluemap.logisticsnetworks.model.NodeSnapshot;

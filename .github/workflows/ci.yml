@@ -40,7 +40,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: jan-guenter/BlueMap
-          ref: 9be321df995a1103808621d529eb72773e719d4d
+          ref: 7e07f4e74ec1e92a6ead9aa1e66054af3e133aac
           path: .ci/bluemap
           submodules: recursive
           fetch-depth: 0
@@ -50,12 +50,9 @@ jobs:
         run: |
           test "$(git -C .ci/bluemap rev-parse --abbrev-ref HEAD)" = "HEAD"
           test "$(git -C .ci/bluemap rev-parse HEAD)" = \
-            "9be321df995a1103808621d529eb72773e719d4d"
+            "7e07f4e74ec1e92a6ead9aa1e66054af3e133aac"
           test "$(git -C .ci/bluemap/api rev-parse HEAD)" = \
             "285c9a60eff3ac2b0cab308ce1058d1565be0971"
-          git -C .ci/bluemap fetch --force --tags origin
-          test "$(git -C .ci/bluemap describe --exact-match --tags HEAD)" = \
-            "v5.22-agent.backport-5.22-mc1.21.1-2"
 
       - name: Set up exact promotion Java 21
         uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0

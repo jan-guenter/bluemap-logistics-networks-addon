@@ -10,7 +10,8 @@ not part of the root orchestration repository.
 | --- | --- |
 | All the Mons | `1.2.0`, pack commit `c7bb230f21d14d26859d0b92548f089b3a493ad9` |
 | Minecraft / NeoForge / Java | `1.21.1` / `21.1.248` / `21` |
-| BlueMap | `5.22-agent.backport-5.22-mc1.21.1-2`, commit `9be321df995a1103808621d529eb72773e719d4d` |
+| BlueMap | `5.22-feature.backport-5.23-stateless-java-web-server-46`, commit `7e07f4e74ec1e92a6ead9aa1e66054af3e133aac` |
+| Adapter API | `0.1.0-alpha.2`, commit `e81f08bc4bfbf02d810ec8949a019130e2e61634`, source tree `2f974c9bb2ba13888d69682f86f30f58922d30eb` |
 | LogisticsNetworks | `logisticsnetworks-1.21.1-1.10.1.jar`, 988,995 bytes, SHA-256 `d94395da601ce93d8d7c9ffc434a018f6f46488303c654f6d6d5747961f56187` |
 
 ## Boundaries
@@ -38,13 +39,14 @@ not part of the root orchestration repository.
 ```bash
 gradle --no-daemon \
   -PlogisticsNetworksJar=/absolute/path/logisticsnetworks-1.21.1-1.10.1.jar \
-  -PreleaseTag=v0.1.0-alpha.1 \
+  -PreleaseTag=v0.1.0-alpha.2 \
   clean check build generatePomFileForAddonPublication \
   generateMetadataFileForAddonPublication verifyPublicationArtifacts \
   verifyReleaseCandidate
 ```
 
-Do not claim natural-fixture behavior, client parity, publication, or
-deployment unless that exact gate runs. Release promotion also requires the
-independent audit, hosted CI, exact annotated tag, and publication checks in
-`docs/RELEASING.md`.
+This gate seals an unpublished migration candidate; it does not establish owner
+acceptance. Do not claim natural-fixture behavior, client parity, publication,
+or deployment. Release promotion also requires runtime review, explicit owner
+acceptance, the independent audit, hosted CI, exact annotated tag, and the
+publication checks in `docs/RELEASING.md`.

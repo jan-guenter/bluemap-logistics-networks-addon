@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.0-alpha.2 - 2026-09-02
+
+- Target only BlueMap's exact 5.23 feature backport at commit `7e07f4e`.
+- Replace local runtime, registry, and resource-extension helpers with four
+  pinned Adapter API sources compiled into the add-on.
+- Preserve the alpha.1 node profile, renderer, topology, fallback rules, and
+  gallery pending combined runtime review.
+
 ## 0.1.0-alpha.1 - 2026-08-21
 
 - Add the bounded exact-profile LogisticsNetworks node-rendering prototype.

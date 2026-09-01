@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: MIT
  */
-package io.github.janguenter.bluemap.logisticsnetworks.adapter.bluemap522;
+package io.github.janguenter.bluemap.logisticsnetworks.adapter.bluemap523;
 
 import com.flowpowered.math.vector.Vector3f;
 import de.bluecolored.bluemap.core.resources.ResourcePath;

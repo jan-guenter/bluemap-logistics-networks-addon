@@ -1,6 +1,6 @@
 # Architecture
 
-The entrypoint installs three exact BlueMap 5.22 registrations before maps or
+The entrypoint installs three exact BlueMap 5.23 registrations before maps or
 world NBT are constructed:
 
 1. `EntityType` maps only `logisticsnetworks:logistics_node` to the narrow DTO.

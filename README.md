@@ -2,13 +2,13 @@
 
 [![CI](https://github.com/jan-guenter/bluemap-logistics-networks-addon/actions/workflows/ci.yml/badge.svg)](https://github.com/jan-guenter/bluemap-logistics-networks-addon/actions/workflows/ci.yml)
 
-A narrow Java 21 BlueMap 5.22 add-on that gives persisted
+A narrow Java 21 add-on for BlueMap's exact 5.23 feature backport that gives persisted
 `logisticsnetworks:logistics_node` entities a deterministic static frame on
 ordinary full-cube hosts.
 
-Version `0.1.0-alpha.1` is the owner-accepted release candidate. Its final
-production JAR is 67,367 bytes with SHA-256
-`5f813504e2dccd63ad0a2cc1bd33a129da2e2934e5576d149b6b215c12ba8f18`.
+Version `0.1.0-alpha.2` is an unpublished migration candidate. It moves the
+owner-accepted alpha.1 rendering contract to the exact feature backport and
+shared Adapter API without changing the node profile, geometry, or gallery.
 
 The exact profile activates only for the All the Mons 1.2.0 runtime artifact
 `logisticsnetworks-1.21.1-1.10.1.jar`, 988,995 bytes, SHA-256
@@ -70,7 +70,7 @@ upstream source, class, model, texture, asset, algorithm, or derived mesh.
 ```bash
 gradle --no-daemon \
   -PlogisticsNetworksJar=/absolute/path/logisticsnetworks-1.21.1-1.10.1.jar \
-  -PreleaseTag=v0.1.0-alpha.1 \
+  -PreleaseTag=v0.1.0-alpha.2 \
   clean check build generatePomFileForAddonPublication \
   generateMetadataFileForAddonPublication verifyPublicationArtifacts \
   verifyReleaseCandidate
@@ -80,11 +80,10 @@ The production JAR is a plain add-on for BlueMap's `packs` directory. It has
 no NeoForge metadata, bundled dependencies, or client hooks. Removing it and
 restarting restores BlueMap's ordinary behavior without changing world data.
 
-The accepted disposable staging render used the synthetic gallery and exact
-runtime artifact; it does not claim a natural saved fixture or exact-client
-renderer parity. The intended immutable tag is `v0.1.0-alpha.1`, and the Maven
-coordinate is
-`io.github.jan-guenter:bluemap-logistics-networks-addon:0.1.0-alpha.1`.
-Publication is allowed only after the independently audited pull request and
-its final-head CI pass. See [the release procedure](docs/RELEASING.md) and
+The alpha.1 disposable staging render used the synthetic gallery and exact
+runtime artifact. Alpha.2 requires a fresh combined runtime review and explicit
+owner acceptance. Neither candidate claims a natural saved fixture or exact
+client-renderer parity. Publication is allowed only after acceptance and the
+independently audited pull request's final-head CI pass. See
+[the release procedure](docs/RELEASING.md) and
 [recorded candidate provenance](provenance/release.json).
