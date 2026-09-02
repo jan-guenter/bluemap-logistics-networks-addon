@@ -4,6 +4,7 @@
 package io.github.janguenter.bluemap.logisticsnetworks.adapter.bluemap523;
 
 import com.flowpowered.math.vector.Vector3f;
+import de.bluecolored.bluemap.core.map.hires.block.BlockRendererType;
 import de.bluecolored.bluemap.core.resources.ResourcePath;
 import de.bluecolored.bluemap.core.resources.pack.PackVersion;
 import de.bluecolored.bluemap.core.resources.pack.resourcepack.ResourcePack;
@@ -153,6 +154,35 @@ class FullCubeHostPreflightTest {
     }
 
     @Test
+    void acceptsCapturedDefaultButRejectsCapturedCustomAfterLateWrap() {
+        ResourcePack pack = packWithTexture();
+        pack.getModels().put(MODEL_KEY, model(fullCubeFaces(), Rotation.ZERO));
+        Variant defaultVariant = new Variant(MODEL_KEY);
+        Variant customVariant = new Variant(MODEL_KEY);
+        customVariant.setRenderer(renderer("test:custom"));
+        pack.getBlockStates().put(
+                Key.parse("test:default"),
+                new de.bluecolored.bluemap.core.resources.pack.resourcepack.blockstate.BlockState(
+                        new Variants(new VariantSet[0], new VariantSet(defaultVariant))
+                )
+        );
+        pack.getBlockStates().put(
+                Key.parse("test:custom"),
+                new de.bluecolored.bluemap.core.resources.pack.resourcepack.blockstate.BlockState(
+                        new Variants(new VariantSet[0], new VariantSet(customVariant))
+                )
+        );
+        OriginalRendererCatalog catalog = OriginalRendererCatalog.capture(pack);
+        BlockRendererType lateWrapper = renderer("bluemap_camol:overlay");
+        defaultVariant.setRenderer(lateWrapper);
+        customVariant.setRenderer(lateWrapper);
+        FullCubeHostPreflight preflight = new FullCubeHostPreflight(pack, catalog);
+
+        assertTrue(preflight.supportsVariantSet(new VariantSet(defaultVariant)));
+        assertFalse(preflight.supportsVariantSet(new VariantSet(customVariant)));
+    }
+
+    @Test
     void rejectsEmptyAndOverCapacityVariantSets() {
         FullCubeHostPreflight preflight = new FullCubeHostPreflight(packWithTexture());
         assertFalse(preflight.supportsVariantSet(new VariantSet(new Variant[0])));
@@ -182,6 +212,10 @@ class FullCubeHostPreflightTest {
 
     private static Variant weighted(double weight) {
         return new Variant(MODEL_KEY, 0F, 0F, 0F, false, weight);
+    }
+
+    private static BlockRendererType renderer(String key) {
+        return new BlockRendererType.Impl(Key.parse(key), (pack, gallery, settings) -> null);
     }
 
     private static EnumMap<Direction, Face> fullCubeFaces() {

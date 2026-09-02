@@ -33,13 +33,13 @@
   "candidate_artifacts": {
     "production_jar": {
       "file_name": "bluemap-logistics-networks-addon-0.1.0-alpha.2.jar",
-      "size": 70983,
-      "sha256": "4e20d31d7204d5665afbfc81737f7e27ff9b28b280b656239ae6c5513c84cde2"
+      "size": 73405,
+      "sha256": "9f9708a26a433fe50c52d3220180e51c1044a1f90db5a08258504f9f4c09fdb3"
     },
     "sources_jar": {
       "file_name": "bluemap-logistics-networks-addon-0.1.0-alpha.2-sources.jar",
-      "size": 34931,
-      "sha256": "1b2e7424689a4721c756907582fc73dcde093bbce88bf8759f722697d5f40fc3"
+      "size": 36112,
+      "sha256": "ea0b3d13c5ee93572451a9f4f0c1f9f7e297d9b658416ed33f71e83dab984ac2"
     },
     "pom": {
       "file_name": "bluemap-logistics-networks-addon-0.1.0-alpha.2.pom",
@@ -49,12 +49,12 @@
     "gradle_module": {
       "file_name": "bluemap-logistics-networks-addon-0.1.0-alpha.2.module.json",
       "size": 2894,
-      "sha256": "ee9f3d60132ff430d023b62b065a049aab7dfa980ea8787a67225e959f1f7477"
+      "sha256": "1c505b6275a12ada7bf49a749002d9576e93eb9b8a57b61cf5190fd11bc5b3e9"
     },
     "sha256sums": {
       "file_name": "SHA256SUMS",
       "size": 492,
-      "sha256": "f4901c3592744d2a8399133664335ced2e88a8ab0d77ccd3cc140d4334c64e20"
+      "sha256": "d43ad9df99e6d5a18790b0b4b1a6eab9071ff29c4bc81ba2a774f7677f695729"
     }
   },
   "gallery_candidate": {
@@ -69,7 +69,8 @@
     "stock_controls": 4,
     "gallery_sources_changed": false,
     "profile_and_resources_changed": false,
-    "renderer_behavior_changed": false,
+    "renderer_behavior_changed": true,
+    "late_wrapper_interop_fixed": true,
     "stock_fallback_changed": false
   },
   "ephemeral_ci_inputs": {

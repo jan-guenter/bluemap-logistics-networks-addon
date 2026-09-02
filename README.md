@@ -58,7 +58,9 @@ differences are irrelevant because BlueMap renders the stock host separately.
 Multipart, overlapping, over-capacity, custom-renderer, missing-texture,
 partial, dynamic, or otherwise ambiguous hosts receive no node overlay. The
 underlying host, including `logisticsnetworks:computer`, remains stock BlueMap
-output.
+output. Renderer admission is captured before late resource-pack wrappers run,
+so a wrapper such as Camol does not hide an otherwise admitted default-rendered
+host. Variants that already used a custom renderer remain rejected.
 
 The frame references the operator-installed `logisticsnetworks:entity/node`
 texture. The sheet uses only the generated project-owned texture described

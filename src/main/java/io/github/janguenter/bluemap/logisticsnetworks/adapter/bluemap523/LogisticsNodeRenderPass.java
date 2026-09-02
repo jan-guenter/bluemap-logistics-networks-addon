@@ -44,13 +44,17 @@ final class LogisticsNodeRenderPass implements RenderPass {
             ResourcePack resourcePack,
             TextureGallery textureGallery,
             RenderSettings renderSettings,
-            LogisticsNetworksRuntime runtime
+            LogisticsNetworksRuntime runtime,
+            OriginalRendererCatalog originalRenderers
     ) {
         this.resourcePack = resourcePack;
         this.renderSettings = renderSettings;
         this.runtime = runtime;
         this.emitter = createEmitter(resourcePack, textureGallery, runtime);
-        this.hostPreflight = new FullCubeHostPreflight(resourcePack);
+        this.hostPreflight = new FullCubeHostPreflight(
+                resourcePack,
+                originalRenderers
+        );
     }
 
     @Override

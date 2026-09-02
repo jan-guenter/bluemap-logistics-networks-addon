@@ -5,6 +5,8 @@
 - Target only BlueMap's exact 5.23 feature backport at commit `7e07f4e`.
 - Replace local runtime, registry, and resource-extension helpers with four
   pinned Adapter API sources compiled into the add-on.
+- Preserve the original default-renderer identity across late resource-pack
+  wrappers, fixing node suppression when Camol is installed in the same server.
 - Preserve the alpha.1 node profile, renderer, topology, fallback rules, and
   gallery pending combined runtime review.
 

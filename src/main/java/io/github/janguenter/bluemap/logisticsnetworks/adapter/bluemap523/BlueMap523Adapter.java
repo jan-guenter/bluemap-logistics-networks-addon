@@ -28,12 +28,16 @@ public final class BlueMap523Adapter {
             );
     private static final RenderPassType RENDER_PASS = new RenderPassType.Impl(
             Key.parse("bluemap_logistics_networks:logistics_nodes"),
-            (pack, gallery, settings) -> new LogisticsNodeRenderPass(
-                    pack,
-                    gallery,
-                    settings,
-                    RUNTIME
-            )
+            (pack, gallery, settings) -> {
+                LogisticsNetworksResourceExtension extension = pack.getExtension(EXTENSION);
+                return new LogisticsNodeRenderPass(
+                        pack,
+                        gallery,
+                        settings,
+                        RUNTIME,
+                        extension == null ? null : extension.originalRenderers()
+                );
+            }
     );
 
     private BlueMap523Adapter() {

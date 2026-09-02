@@ -25,9 +25,11 @@ is intentionally not part of the lookup rule.
 
 Host preflight requires exactly one matching or default blockstate variant
 set, between one and 64 alternatives, and independently proves every
-alternative to be the same occupied unit-cube shape: default renderer,
-positive finite individual and total weight, right-angle transform, one
-full-cube element, six faces, and resolvable textures. This admits Minecraft
+alternative to be the same occupied unit-cube shape: originally default
+renderer, positive finite individual and total weight, right-angle transform,
+one full-cube element, six faces, and resolvable textures. Renderer identity is
+captured during extension bake before late resource wrappers run. This admits
+Minecraft
 1.21.1 stone's four
 stock weighted stone/stone-mirrored choices without treating texture or UV
 differences as frame geometry, while any unsupported alternative fails the
