@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: MIT
  */
-package io.github.janguenter.bluemap.logisticsnetworks.adapter.bluemap522;
+package io.github.janguenter.bluemap.logisticsnetworks.adapter.bluemap523;
 
 import com.flowpowered.math.vector.Vector3f;
 import de.bluecolored.bluemap.core.map.hires.block.BlockRendererType;
@@ -27,9 +27,28 @@ final class FullCubeHostPreflight {
     private static final Vector3f FULL_MAX = new Vector3f(16F, 16F, 16F);
 
     private final ResourcePack resourcePack;
+    private final OriginalRendererCatalog originalRenderers;
+    private final boolean requireOriginalRendererCatalog;
 
     FullCubeHostPreflight(ResourcePack resourcePack) {
+        this(resourcePack, null, false);
+    }
+
+    FullCubeHostPreflight(
+            ResourcePack resourcePack,
+            OriginalRendererCatalog originalRenderers
+    ) {
+        this(resourcePack, originalRenderers, true);
+    }
+
+    private FullCubeHostPreflight(
+            ResourcePack resourcePack,
+            OriginalRendererCatalog originalRenderers,
+            boolean requireOriginalRendererCatalog
+    ) {
         this.resourcePack = resourcePack;
+        this.originalRenderers = originalRenderers;
+        this.requireOriginalRendererCatalog = requireOriginalRendererCatalog;
     }
 
     boolean supports(BlockNeighborhood block) {
@@ -87,7 +106,7 @@ final class FullCubeHostPreflight {
         }
         double totalWeight = 0D;
         for (Variant variant : selected.getVariants()) {
-            if (!supportsVariant(variant)) {
+            if (!supportsVariantWithOriginalRenderer(variant)) {
                 return false;
             }
             totalWeight += variant.getWeight();
@@ -105,6 +124,23 @@ final class FullCubeHostPreflight {
     static boolean supportsVariant(Variant variant) {
         return variant != null
                 && variant.getRenderer() == BlockRendererType.DEFAULT
+                && supportsVariantGeometry(variant);
+    }
+
+    private boolean supportsVariantWithOriginalRenderer(Variant variant) {
+        boolean rendererAdmitted;
+        if (originalRenderers != null) {
+            rendererAdmitted = originalRenderers.wasDefault(variant);
+        } else {
+            rendererAdmitted = !requireOriginalRendererCatalog
+                    && variant != null
+                    && variant.getRenderer() == BlockRendererType.DEFAULT;
+        }
+        return rendererAdmitted && supportsVariantGeometry(variant);
+    }
+
+    private static boolean supportsVariantGeometry(Variant variant) {
+        return variant != null
                 && variant.getModel() != null
                 && !ResourcePack.MISSING_BLOCK_MODEL.equals(variant.getModel())
                 && Double.isFinite(variant.getWeight())

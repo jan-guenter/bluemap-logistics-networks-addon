@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: MIT
  */
-package io.github.janguenter.bluemap.logisticsnetworks.adapter.bluemap522;
+package io.github.janguenter.bluemap.logisticsnetworks.adapter.bluemap523;
 
 import de.bluecolored.bluemap.core.resources.pack.resourcepack.ResourcePack;
 import de.bluecolored.bluemap.core.resources.pack.resourcepack.ResourcePackExtension;
@@ -25,6 +25,7 @@ final class LogisticsNetworksResourceExtension implements ResourcePackExtension 
     private final ResourcePack resourcePack;
     private final LogisticsNetworksRuntime runtime;
     private Texture installedSheetTexture;
+    private OriginalRendererCatalog originalRenderers;
 
     LogisticsNetworksResourceExtension(
             ResourcePack resourcePack,
@@ -66,6 +67,12 @@ final class LogisticsNetworksResourceExtension implements ResourcePackExtension 
         if (!runtime.isActive()) {
             return;
         }
+        OriginalRendererCatalog originalRenderers =
+                OriginalRendererCatalog.capture(resourcePack);
+        if (originalRenderers.size() == 0) {
+            inactive("original-renderer-catalog-empty");
+            return;
+        }
         Texture texture = resourcePack.getTextures().get(LogisticsNetworks1101Profile.NODE_TEXTURE);
         if (texture == null) {
             inactive("node-texture-missing");
@@ -96,6 +103,11 @@ final class LogisticsNetworksResourceExtension implements ResourcePackExtension 
             inactive("synthetic-sheet-texture-generation-failed");
             return;
         }
+        this.originalRenderers = originalRenderers;
+    }
+
+    OriginalRendererCatalog originalRenderers() {
+        return originalRenderers;
     }
 
     SyntheticSheetTexture.InstallResult bakeSheetTexture() {
@@ -125,6 +137,7 @@ final class LogisticsNetworksResourceExtension implements ResourcePackExtension 
             resourcePack.getTextures().remove(SyntheticSheetTexture.KEY);
         }
         installedSheetTexture = null;
+        originalRenderers = null;
         runtime.inactive(reason);
     }
 

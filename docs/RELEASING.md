@@ -12,7 +12,7 @@ local LogisticsNetworks artifact:
 ```bash
 gradle --no-daemon \
   -PlogisticsNetworksJar=/absolute/path/logisticsnetworks-1.21.1-1.10.1.jar \
-  -PreleaseTag=v0.1.0-alpha.1 \
+  -PreleaseTag=v0.1.0-alpha.2 \
   clean check build generatePomFileForAddonPublication \
   generateMetadataFileForAddonPublication verifyPublicationArtifacts \
   verifyReleaseCandidate

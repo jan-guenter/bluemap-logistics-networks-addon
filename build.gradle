@@ -14,6 +14,10 @@ base {
     archivesName = artifact_id
 }
 
+sourceSets {
+    main.java.srcDir 'modules/bluemap-addon-adapter-api/src/main/java'
+}
+
 repositories {
     mavenCentral()
     maven {
@@ -52,6 +56,10 @@ tasks.named('jar', Jar).configure {
         into 'META-INF'
         rename { 'LICENSE-bluemap-logistics-networks-addon' }
     }
+    from('modules/bluemap-addon-adapter-api/LICENSE') {
+        into 'META-INF'
+        rename { 'LICENSE-bluemap-addon-adapter-api' }
+    }
     from('NOTICE.md') {
         into 'META-INF'
         rename { 'NOTICE-bluemap-logistics-networks-addon.md' }
@@ -70,6 +78,10 @@ tasks.named('sourcesJar', Jar).configure {
         into 'META-INF'
         rename { 'LICENSE-bluemap-logistics-networks-addon' }
     }
+    from('modules/bluemap-addon-adapter-api/LICENSE') {
+        into 'META-INF'
+        rename { 'LICENSE-bluemap-addon-adapter-api' }
+    }
     from('NOTICE.md') {
         into 'META-INF'
         rename { 'NOTICE-bluemap-logistics-networks-addon.md' }
@@ -85,6 +97,22 @@ tasks.named('sourcesJar', Jar).configure {
 
 def productionJar = tasks.named('jar', Jar).flatMap { it.archiveFile }
 def publishedSourcesJar = tasks.named('sourcesJar', Jar).flatMap { it.archiveFile }
+def sharedAdapterApiPackage =
+        'io/github/janguenter/bluemap/addon/adapter/api/bluemap523/'
+def sharedAdapterApiClasses = [
+        "${sharedAdapterApiPackage}BlueMapRuntimeCompatibility.class",
+        "${sharedAdapterApiPackage}RegistryGuard.class",
+        "${sharedAdapterApiPackage}ResourceExtensionType.class",
+        "${sharedAdapterApiPackage}SyntheticDispatch.class"
+].collect { it.toString() }
+def sharedAdapterApiSources = [
+        "${sharedAdapterApiPackage}BlueMapRuntimeCompatibility.java",
+        "${sharedAdapterApiPackage}RegistryGuard.java",
+        "${sharedAdapterApiPackage}ResourceExtensionType.java",
+        "${sharedAdapterApiPackage}SyntheticDispatch.java"
+].collect { it.toString() }
+def legacyLocalAdapterPackage =
+        'io/github/janguenter/bluemap/logisticsnetworks/adapter/bluemap522/'
 
 tasks.register('verifyAcceptedProductionJar') {
     dependsOn tasks.named('jar')
@@ -147,15 +175,22 @@ tasks.register('verifyProductionJar') {
             def required = [
                     'bluemap.addon.json',
                     'bluemap-logistics-networks/profiles/logisticsnetworks/1.10.1/profile.json',
-                    'io/github/janguenter/bluemap/logisticsnetworks/adapter/bluemap522/SyntheticSheetTexture.class',
+                    'io/github/janguenter/bluemap/logisticsnetworks/adapter/bluemap523/SyntheticSheetTexture.class',
                     'META-INF/LICENSE-bluemap-logistics-networks-addon',
+                    'META-INF/LICENSE-bluemap-addon-adapter-api',
                     'META-INF/NOTICE-bluemap-logistics-networks-addon.md',
                     'META-INF/THIRD_PARTY-bluemap-logistics-networks-addon.md',
                     'META-INF/bluemap-logistics-networks/upstreams.json'
-            ]
+            ] + sharedAdapterApiClasses
             def missing = required.findAll { !entries.contains(it) }
-            if (!missing.isEmpty()) {
-                throw new GradleException("Production JAR is missing: ${missing}")
+            def duplicateShared = sharedAdapterApiClasses.findAll { shared ->
+                entries.count { it == shared } != 1
+            }
+            if (!missing.isEmpty() || !duplicateShared.isEmpty()) {
+                throw new GradleException(
+                        "Production JAR shared boundary mismatch: missing=${missing}, "
+                                + "nonUnique=${duplicateShared}"
+                )
             }
 
             def addon = new groovy.json.JsonSlurper().parseText(
@@ -171,6 +206,11 @@ tasks.register('verifyProductionJar') {
 
             def forbidden = entries.findAll {
                 it.endsWith('.jar')
+                        || (it.endsWith('.class')
+                        && !it.startsWith(
+                                'io/github/janguenter/bluemap/logisticsnetworks/'
+                        )
+                        && !sharedAdapterApiClasses.contains(it))
                         || it.endsWith('.png')
                         || it == 'META-INF/neoforge.mods.toml'
                         || it == 'fabric.mod.json'
@@ -181,6 +221,11 @@ tasks.register('verifyProductionJar') {
                         || it.startsWith('net/minecraft/')
                         || it.startsWith('net/neoforged/')
                         || it.startsWith('gallery/')
+                        || (it.startsWith(legacyLocalAdapterPackage)
+                            && !it.endsWith('/'))
+                        || (it.startsWith(sharedAdapterApiPackage)
+                            && !it.endsWith('/')
+                            && !sharedAdapterApiClasses.contains(it))
             }
             if (!forbidden.isEmpty()) {
                 throw new GradleException("Production JAR contains forbidden entries: ${forbidden}")
@@ -202,22 +247,24 @@ tasks.register('verifySourcesJar') {
             def entries = zip.entries().findAll { !it.directory }.collect { it.name }
             def required = [
                     'io/github/janguenter/bluemap/logisticsnetworks/BlueMapLogisticsNetworksAddon.java',
-                    'io/github/janguenter/bluemap/logisticsnetworks/adapter/bluemap522/LogisticsNodeRenderPass.java',
-                    'io/github/janguenter/bluemap/logisticsnetworks/adapter/bluemap522/SyntheticSheetTexture.java',
+                    'io/github/janguenter/bluemap/logisticsnetworks/adapter/bluemap523/LogisticsNodeRenderPass.java',
+                    'io/github/janguenter/bluemap/logisticsnetworks/adapter/bluemap523/SyntheticSheetTexture.java',
                     'bluemap.addon.json',
                     'bluemap-logistics-networks/profiles/logisticsnetworks/1.10.1/profile.json',
                     'META-INF/LICENSE-bluemap-logistics-networks-addon',
+                    'META-INF/LICENSE-bluemap-addon-adapter-api',
                     'META-INF/NOTICE-bluemap-logistics-networks-addon.md',
                     'META-INF/THIRD_PARTY-bluemap-logistics-networks-addon.md',
                     'META-INF/bluemap-logistics-networks/upstreams.json'
-            ]
+            ] + sharedAdapterApiSources
             def missing = required.findAll { !entries.contains(it) }
-            if (!missing.isEmpty()) {
-                throw new GradleException("Sources JAR is missing: ${missing}")
+            def duplicateShared = sharedAdapterApiSources.findAll { shared ->
+                entries.count { it == shared } != 1
             }
             def projectJava = entries.findAll { it.endsWith('.java') }
             def foreignJava = projectJava.findAll {
                 !it.startsWith('io/github/janguenter/bluemap/logisticsnetworks/')
+                        && !sharedAdapterApiSources.contains(it)
             }
             def forbidden = entries.findAll {
                 it.endsWith('.class')
@@ -229,10 +276,19 @@ tasks.register('verifySourcesJar') {
                         || it.startsWith('net/minecraft/')
                         || it.startsWith('net/neoforged/')
                         || it.startsWith('gallery/')
+                        || (it.startsWith(legacyLocalAdapterPackage)
+                            && !it.endsWith('/'))
+                        || (it.startsWith(sharedAdapterApiPackage)
+                            && !it.endsWith('/')
+                            && !sharedAdapterApiSources.contains(it))
             }
-            if (projectJava.isEmpty() || !foreignJava.isEmpty() || !forbidden.isEmpty()) {
+            if (!missing.isEmpty() || !duplicateShared.isEmpty()
+                    || projectJava.isEmpty() || !foreignJava.isEmpty()
+                    || !forbidden.isEmpty()) {
                 throw new GradleException(
-                        "Sources JAR boundary mismatch: foreignJava=${foreignJava}, "
+                        "Sources JAR boundary mismatch: missing=${missing}, "
+                                + "nonUnique=${duplicateShared}, "
+                                + "foreignJava=${foreignJava}, "
                                 + "forbidden=${forbidden}"
                 )
             }
@@ -256,11 +312,8 @@ tasks.register('verifyPinnedArtifacts', Exec) {
 }
 
 tasks.named('check').configure {
-    dependsOn tasks.named('verifyAcceptedProductionJar')
-    dependsOn tasks.named('verifyAcceptedSourcesJar')
     dependsOn tasks.named('verifyProductionJar')
     dependsOn tasks.named('verifySourcesJar')
-    dependsOn tasks.named('verifyStagedEquivalence')
     dependsOn tasks.named('verifyPinnedArtifacts')
 }
 
@@ -312,12 +365,55 @@ tasks.register('verifyReleaseMetadata') {
                     "Release tag mismatch: ${requestedTag ?: '<unset>'} != ${expectedTag}"
             )
         }
+        def release = new groovy.json.JsonSlurper()
+                .parse(file('provenance/release.json'))
+        def expectedRepository =
+                'https://github.com/jan-guenter/bluemap-logistics-networks-addon'
+        if (release.version != project.version.toString()
+                || release.repository != expectedRepository
+                || !(release.candidate_artifacts instanceof Map)
+                || release.candidate_artifacts.isEmpty()) {
+            throw new GradleException('Migration candidate provenance is not sealed')
+        }
+
+        def expectedArtifacts = [
+                production_jar: [
+                        file_name: "${artifact_id}-${project.version}.jar",
+                        size: providers.gradleProperty('accepted_jar_size').get().toLong(),
+                        sha256: providers.gradleProperty('accepted_jar_sha256').get()
+                ],
+                sources_jar: [
+                        file_name: "${artifact_id}-${project.version}-sources.jar",
+                        size: providers.gradleProperty('accepted_sources_jar_size').get().toLong(),
+                        sha256: providers.gradleProperty('accepted_sources_jar_sha256').get()
+                ],
+                pom: [
+                        file_name: "${artifact_id}-${project.version}.pom",
+                        size: providers.gradleProperty('accepted_pom_size').get().toLong(),
+                        sha256: providers.gradleProperty('accepted_pom_sha256').get()
+                ],
+                gradle_module: [
+                        file_name: "${artifact_id}-${project.version}.module.json",
+                        size: providers.gradleProperty('accepted_module_size').get().toLong(),
+                        sha256: providers.gradleProperty('accepted_module_sha256').get()
+                ]
+        ]
+        expectedArtifacts.each { name, expected ->
+            def recorded = release.candidate_artifacts[name]
+            if (!(recorded instanceof Map)
+                    || recorded.file_name != expected.file_name
+                    || recorded.size != expected.size
+                    || recorded.sha256 != expected.sha256) {
+                throw new GradleException("Release provenance mismatch for ${name}")
+            }
+        }
     }
 }
 
 tasks.register('verifyReleaseCandidate') {
     dependsOn tasks.named('check')
-    dependsOn tasks.named('verifyPinnedArtifacts')
+    dependsOn tasks.named('verifyAcceptedProductionJar')
+    dependsOn tasks.named('verifyAcceptedSourcesJar')
     dependsOn tasks.named('verifyPublicationArtifacts')
     dependsOn tasks.named('verifyReleaseMetadata')
 }

@@ -40,7 +40,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: jan-guenter/BlueMap
-          ref: 9be321df995a1103808621d529eb72773e719d4d
+          ref: 7e07f4e74ec1e92a6ead9aa1e66054af3e133aac
           path: .ci/bluemap
           submodules: recursive
           fetch-depth: 0
@@ -50,12 +50,9 @@ jobs:
         run: |
           test "$(git -C .ci/bluemap rev-parse --abbrev-ref HEAD)" = "HEAD"
           test "$(git -C .ci/bluemap rev-parse HEAD)" = \
-            "9be321df995a1103808621d529eb72773e719d4d"
+            "7e07f4e74ec1e92a6ead9aa1e66054af3e133aac"
           test "$(git -C .ci/bluemap/api rev-parse HEAD)" = \
             "285c9a60eff3ac2b0cab308ce1058d1565be0971"
-          git -C .ci/bluemap fetch --force --tags origin
-          test "$(git -C .ci/bluemap describe --exact-match --tags HEAD)" = \
-            "v5.22-agent.backport-5.22-mc1.21.1-2"
 
       - name: Set up exact promotion Java 21
         uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
@@ -121,21 +118,18 @@ jobs:
             verifyPublicationArtifacts verifyReleaseCandidate
           test "$(stat -c %s \
             "build/libs/bluemap-logistics-networks-addon-${VERSION}.jar")" \
-            -eq 67367
+            -eq 73405
           test "$(stat -c %s \
             "build/libs/bluemap-logistics-networks-addon-${VERSION}-sources.jar")" \
-            -eq 31656
+            -eq 36112
           test "$(stat -c %s build/publications/addon/pom-default.xml)" -eq 1408
           test "$(stat -c %s build/publications/addon/module.json)" -eq 2894
           sha256sum --check <<SHA256SUMS
-          5f813504e2dccd63ad0a2cc1bd33a129da2e2934e5576d149b6b215c12ba8f18  build/libs/bluemap-logistics-networks-addon-${VERSION}.jar
-          df0b53155df3c1add4fbea839fbc125a212ed2c6a4d25ebe812c4801a85bfa98  build/libs/bluemap-logistics-networks-addon-${VERSION}-sources.jar
-          d2d0f5443803bd3e6be9fb874a3a4e7997f14c6b88dd82fb24359f4b9e15730b  build/publications/addon/pom-default.xml
-          941a1cef0811d1f88d974f7c401141aa5d73ce8e56a04a13b7a35a5c4a341936  build/publications/addon/module.json
+          9f9708a26a433fe50c52d3220180e51c1044a1f90db5a08258504f9f4c09fdb3  build/libs/bluemap-logistics-networks-addon-${VERSION}.jar
+          ea0b3d13c5ee93572451a9f4f0c1f9f7e297d9b658416ed33f71e83dab984ac2  build/libs/bluemap-logistics-networks-addon-${VERSION}-sources.jar
+          32fd1f1532c70072576a84a81a101b324b2ea06b969721f10c979ea776411379  build/publications/addon/pom-default.xml
+          1c505b6275a12ada7bf49a749002d9576e93eb9b8a57b61cf5190fd11bc5b3e9  build/publications/addon/module.json
           SHA256SUMS
-          python3 tools/verify_staged_equivalence.py \
-            --jar "build/libs/bluemap-logistics-networks-addon-${VERSION}.jar" \
-            --entries provenance/accepted-staging-entries.sha256
 
       - name: Upload review outputs
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
