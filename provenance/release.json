@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "status": "unpublished-migration-candidate",
+  "status": "owner-accepted-release-candidate",
   "published": false,
   "version": "0.1.0-alpha.2",
   "release_date": "2026-09-02",
@@ -64,6 +64,12 @@
     "deterministic_rebuild": true,
     "matches_alpha_1_owner_accepted_gallery": true
   },
+  "owner_acceptance": {
+    "date": "2026-09-02",
+    "scope": "combined All the Mons 1.2.0 BlueMap 5.23 integration gallery",
+    "production_jar_size": 73405,
+    "production_jar_sha256": "9f9708a26a433fe50c52d3220180e51c1044a1f90db5a08258504f9f4c09fdb3"
+  },
   "preserved_contract": {
     "synthetic_nodes": 11,
     "stock_controls": 4,
@@ -89,8 +95,10 @@
     "sources_archive_boundary_gate": true,
     "local_candidate_artifact_identity_gate": true,
     "authoritative_pr_ci_reproduction": true,
+    "authoritative_pr_ci_run_id": 33580244656,
+    "authoritative_pr_ci_head_commit": "6c1ce6394bb3ba2c2270e354d97003ba6b200b78",
     "local_gradle_version": "9.6.1",
     "local_java_runtime": "21.0.12.1+1",
-    "exact_alpha_2_runtime_review": false
+    "exact_alpha_2_runtime_review": true
   }
 }

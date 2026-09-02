@@ -6,9 +6,10 @@ A narrow Java 21 add-on for BlueMap's exact 5.23 feature backport that gives per
 `logisticsnetworks:logistics_node` entities a deterministic static frame on
 ordinary full-cube hosts.
 
-Version `0.1.0-alpha.2` is an unpublished migration candidate. It moves the
-owner-accepted alpha.1 rendering contract to the exact feature backport and
-shared Adapter API without changing the node profile, geometry, or gallery.
+Version `0.1.0-alpha.2` is the owner-accepted BlueMap 5.23 release candidate.
+It moves the alpha.1 rendering contract to the exact feature backport and
+shared Adapter API, and preserves valid host admission through Camol's late
+renderer wrapping.
 
 The exact profile activates only for the All the Mons 1.2.0 runtime artifact
 `logisticsnetworks-1.21.1-1.10.1.jar`, 988,995 bytes, SHA-256
@@ -82,10 +83,10 @@ The production JAR is a plain add-on for BlueMap's `packs` directory. It has
 no NeoForge metadata, bundled dependencies, or client hooks. Removing it and
 restarting restores BlueMap's ordinary behavior without changing world data.
 
-The alpha.1 disposable staging render used the synthetic gallery and exact
-runtime artifact. Alpha.2 requires a fresh combined runtime review and explicit
-owner acceptance. Neither candidate claims a natural saved fixture or exact
-client-renderer parity. Publication is allowed only after acceptance and the
-independently audited pull request's final-head CI pass. See
+The alpha.2 production candidate passed the combined All the Mons 1.2.0
+runtime review and owner visual acceptance on 2026-09-02. Neither release
+claims a natural saved fixture or exact client-renderer parity. Publication is
+allowed only from the independently audited pull request after its final-head
+CI pass. See
 [the release procedure](docs/RELEASING.md) and
 [recorded candidate provenance](provenance/release.json).
